@@ -1,5 +1,12 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User
+from .models import CustomUser
 
-admin.site.register(User, UserAdmin)
+
+class CustomUserAdmin (UserAdmin):
+    ordering = ['email']
+    list_display = ['email', 'first_name', 'last_name', 'is_staff']
+
+
+admin.site.register(CustomUser, CustomUserAdmin)
+
