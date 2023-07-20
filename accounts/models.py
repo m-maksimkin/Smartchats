@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.conf import settings
 
 
 class CustomUserManager(BaseUserManager):
@@ -32,6 +33,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(_('staff status'), default=False)
     is_active = models.BooleanField(_('active'), default=True)
     date_joined = models.DateTimeField(_('date joined'), auto_now_add=True)
+    email_verified = models.BooleanField(_('email verified'), default=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -40,3 +42,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+
+class Profile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                related_name='profile')
+
+    def __str__(self):
+        return f'{self.user.email} Profile'
+    

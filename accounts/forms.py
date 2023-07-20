@@ -42,7 +42,7 @@ class RegistrationForm(forms.Form):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return email
+            return email.lower()
         raise forms.ValidationError(_("Аккаунт с таким email уже существует"))
 
     def clean_password2(self):
@@ -58,5 +58,12 @@ class RegistrationForm(forms.Form):
             if password1 != password2:
                 self.add_error("password2", _("Пароли не совпадают"))
         return cleaned_data
+
+    def create_user(self):
+        cl = self.cleaned_data
+        user = User(email=cl["email"], is_active=False)
+        user.set_password(cl['password1'])
+        user.save()
+        return user
 
 
