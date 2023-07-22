@@ -8,7 +8,7 @@ User = get_user_model()
 class EmailAuthBackend(ModelBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         """
-        Authenticates via email.
+        Authenticate via email.
         username param supposed to hold email value, name should be
         preserved in order to keep basic auth views working.
         """
