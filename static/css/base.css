@@ -1,0 +1,6 @@
+.btn-google {
+    background-color: white;
+}
+.btn-google:hover {
+    background-color: lightgrey;
+}

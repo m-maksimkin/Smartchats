@@ -13,7 +13,7 @@ from django.contrib import messages
 
 
 def account_index(request):
-    return render(request, 'base.html')
+    return render(request, 'accounts/temp_index.html')
 
 
 class MyLoginView(LoginView):
@@ -64,5 +64,14 @@ def email_verify_view(request, uidb64, token):
                       {'message': 'Данная ссылка больше не действительна'})
 
 
+def signup_redirect_view(request):
+    messages.error(request,
+                   'Что-то пошло не так, возможно этот аккаунт уже зарегистрирован')
+    return redirect('accounts:login')
 
+
+def account_inactive_view(request):
+    messages.error(request,
+                   'Данный аккаунт временно заблокирован.')
+    return redirect('accounts:login')
 

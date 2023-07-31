@@ -1,8 +1,14 @@
 {% extends 'base.html' %}
+{% load socialaccount %}
 {% load crispy_forms_tags %}
 {% block content %}
 	<div class="container-fluid d-flex align-items-center justify-content-center" style="height: 90vh; width: 90vw;">
 		<div class="card p-4" style="width: 400px;">
+			<a href="{% provider_login_url 'google' %}" class="btn btn-lg btn-google border border-1 border-grey rounded-3">
+  			<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google icon" width="18" height="18">
+  			Sign in with Google
+			</a>
+
 			<form method="post">
 				{% csrf_token %}
 				{{ form|crispy }}

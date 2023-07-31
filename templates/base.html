@@ -40,6 +40,21 @@
 			</div>
 		</nav>
 
+		{% if messages %}
+			<div class="container mt-3">
+				<div>
+					{% for message in messages %}
+					<div class="{% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}alert alert-danger{% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}alert alert-warning{% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}alert alert-success{% else %}alert alert-info{% endif %} alert-dismissible"
+					style="max-width: 100%">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						{{ message }}
+					</div>
+					{% endfor %}
+				</div>
+			</div>
+		{% endif %}
+
+
    {% block content %}
    {% endblock %}
 
