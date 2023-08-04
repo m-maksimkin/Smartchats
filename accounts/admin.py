@@ -10,7 +10,9 @@ class ProfileInline(admin.StackedInline):
 
 class CustomUserAdmin (UserAdmin):
     ordering = ['date_joined']
-    list_display = ['email', 'first_name', 'last_name', 'is_staff', 'email_verified']
+    list_display = [
+        'email', 'first_name', 'last_name', 'is_active',
+        'email_verified', 'is_staff']
     readonly_fields = ['date_joined']
     inlines = [ProfileInline]
     fieldsets = (

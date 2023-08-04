@@ -8,12 +8,15 @@
   			<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google icon" width="18" height="18">
   			Sign in with Google
 			</a>
-
+			<hr class="hr-blurry my-3 bg-secondary"/>
 			<form method="post">
 				{% csrf_token %}
 				{{ form|crispy }}
-				<input type="submit" value="sas" class="btn btn-dark w-100">
+				<input type="submit" value="Войти" class="btn btn-dark w-100">
 			</form>
+			<div class="text-center mt-4">
+  			<a href="{% url "accounts:sign_up" %}" class="link-secondary">Регистрация</a>
+			</div>
 		</div>
 	</div>
 {% endblock %}

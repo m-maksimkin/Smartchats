@@ -27,9 +27,6 @@ def sign_up_view(request):
         form = forms.RegistrationForm(request.POST)
         if form.is_valid():
             user = form.create_user()
-            # call form.save_user
-            # run celery confirm email task
-            # redirect to confirmation email sent
             uidb64 = urlsafe_base64_encode(force_bytes(user.id))
             token = EmailConfirmTokenGenerator().make_token(user)
             email = form.cleaned_data['email']
