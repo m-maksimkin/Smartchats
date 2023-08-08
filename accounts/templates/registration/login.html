@@ -15,7 +15,8 @@
 				<input type="submit" value="Войти" class="btn btn-dark w-100">
 			</form>
 			<div class="text-center mt-4">
-  			<a href="{% url "accounts:sign_up" %}" class="link-secondary">Регистрация</a>
+  			<a href="{% url "accounts:sign_up" %}" class="link-secondary">Регистрация</a><br>
+				<a href="{% url "accounts:initiate_password_reset" %}" class="link-secondary">Не помню пароль</a>
 			</div>
 		</div>
 	</div>
