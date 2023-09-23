@@ -34,6 +34,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(_('active'), default=True)
     date_joined = models.DateTimeField(_('date joined'), auto_now_add=True)
     email_verified = models.BooleanField(_('email verified'), default=False)
+    chatbots_available = models.IntegerField(_('chatbots_available'), default=3)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -50,4 +51,3 @@ class Profile(models.Model):
 
     def __str__(self):
         return f'{self.user.email} Profile'
-    
