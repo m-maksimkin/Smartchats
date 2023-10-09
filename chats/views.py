@@ -1,10 +1,12 @@
-from django.shortcuts import render, redirect
-from django.views.generic import ListView
+from django.shortcuts import render, redirect, get_object_or_404, reverse
+from django.views.generic import View, ListView
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import SmartChat
+from .models import SmartChat, ChatFile
 from . import forms
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
+
 
 
 class ListChats(LoginRequiredMixin, ListView):
@@ -23,6 +25,7 @@ class ListChats(LoginRequiredMixin, ListView):
         return context
 
 
+@login_required()
 def initiate_chatbot_creation(request):
     user = request.user
     chatbots_available = (user.chatbots_available
@@ -32,10 +35,98 @@ def initiate_chatbot_creation(request):
         return redirect('chats:list_chats')
     new_chat = SmartChat(owner=user)
     new_chat.save()
-    return HttpResponse(new_chat.pk)
+    return redirect('chats:add_files', chat_uuid=new_chat.pk)
 
 
-def chat_add_file(request):
-    form = forms.AddFileForm()
-    return render(request, 'chats/general/chat_add_file.html',
-                  {'form': form})
+class AddFilesListView(LoginRequiredMixin, ListView):
+    model = ChatFile
+    template_name = 'chats/general/chat_add_files.html'
+    context_object_name = 'chat_files'
+    # paginate_by
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.smartchat = None
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        chat_uuid = self.kwargs.get('chat_uuid')
+        self.smartchat = get_object_or_404(SmartChat, id=chat_uuid,
+                                           owner=self.request.user)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        queryset = self.smartchat.files.all().order_by('-created')
+        return queryset
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['smartchat_characters'] = self.smartchat.character_length
+        context['chat_uuid'] = self.smartchat.id
+        context['chat_character_limit'] = (
+            self.smartchat.owner.chatbot_character_limit
+        )
+        return context
+
+
+def chat_add_file(request, chat_uuid):
+    files = request.FILES
+    if files:
+        return HttpResponse('ura')
+    return render(request, 'chats/general/chat_add_file.html')
+
+
+class FilesSubmitView(LoginRequiredMixin, View):
+    ALLOWED_EXTENSIONS = ['txt', 'doc', 'docx', 'pdf', 'html']
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.chat = None
+        self.chat_character_limit = None
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        chat_uuid = self.kwargs.get('chat_uuid')
+        self.chat = get_object_or_404(SmartChat, id=chat_uuid,
+                                      owner=self.request.user)
+        self.chat_character_limit = self.chat.owner.chatbot_character_limit
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, chat_uuid):
+        for submitted_file in request.FILES.getlist('file'):
+            file_length_in_bytes = 0
+            if submitted_file.name.split('.')[-1].lower() not in self.ALLOWED_EXTENSIONS:
+                messages.error(
+                    request,
+                    f"Расширение файла {submitted_file.name} не поддерживается"
+                )
+                continue
+            for chunk in submitted_file.chunks():
+                file_length_in_bytes += len(chunk)
+            chat_file = ChatFile(file=submitted_file, chat=self.chat,
+                                 character_length=file_length_in_bytes)
+            self.chat.character_length += file_length_in_bytes
+            if (self.chat.character_length
+                    <= self.chat_character_limit):
+                chat_file.save()
+            else:
+                self.chat.character_length -= file_length_in_bytes
+                messages.error(
+                    request,
+                    f"Размер файла {submitted_file.name} "
+                    f"{file_length_in_bytes} символов превышает допустимый лимит"
+                )
+        self.chat.save()
+        return redirect(reverse('chats:add_files', kwargs={'chat_uuid': chat_uuid}))
+
+
+@login_required()
+def chat_file_delete(request, chat_uuid, file_id):
+    chat = get_object_or_404(SmartChat, id=chat_uuid, owner=request.user)
+    file = get_object_or_404(ChatFile, chat=chat, pk=file_id)
+    chat.character_length -= file.character_length
+    file.delete()
+    chat.save()
+    return redirect(reverse('chats:add_files', kwargs={'chat_uuid': chat_uuid}))

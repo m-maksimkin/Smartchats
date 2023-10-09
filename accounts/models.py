@@ -35,6 +35,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(_('date joined'), auto_now_add=True)
     email_verified = models.BooleanField(_('email verified'), default=False)
     chatbots_available = models.IntegerField(_('chatbots_available'), default=3)
+    chatbot_character_limit = models.IntegerField(default=1000000)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
