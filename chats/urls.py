@@ -14,5 +14,6 @@ urlpatterns = [
     path('<uuid:chat_uuid>/delete-file/<int:file_id>', views.chat_file_delete,
          name='delete-file'),
 
-    path('add-file/', views.chat_add_file, name='testlink'),
+    path('<uuid:chat_uuid>/add-text/', views.AddTextView.as_view(),
+         name='add_text'),
 ]

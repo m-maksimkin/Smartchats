@@ -1,12 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404, reverse
-from django.views.generic import View, ListView
+from django.views.generic import View, ListView, TemplateView, FormView
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import SmartChat, ChatFile
+from .models import SmartChat, ChatFile, ChatText
 from . import forms
 from django.contrib import messages
 from django.http import HttpResponse, FileResponse
-
 
 
 class ListChats(LoginRequiredMixin, ListView):
@@ -70,13 +69,6 @@ class AddFilesListView(LoginRequiredMixin, ListView):
         return context
 
 
-def chat_add_file(request, chat_uuid):
-    files = request.FILES
-    if files:
-        return HttpResponse('ura')
-    return render(request, 'chats/general/chat_add_file.html')
-
-
 class FilesSubmitView(LoginRequiredMixin, View):
     ALLOWED_EXTENSIONS = ['txt', 'doc', 'docx', 'pdf', 'html']
 
@@ -130,3 +122,55 @@ def chat_file_delete(request, chat_uuid, file_id):
     file.delete()
     chat.save()
     return redirect(reverse('chats:add_files', kwargs={'chat_uuid': chat_uuid}))
+
+
+class AddTextView(LoginRequiredMixin, FormView):
+    template_name = 'chats/general/chat_add_text.html'
+    form_class = forms.AddTextFrom
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.smartchat = None
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        chat_uuid = self.kwargs.get('chat_uuid')
+        self.smartchat = get_object_or_404(SmartChat, id=chat_uuid,
+                                           owner=self.request.user)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['smartchat_characters'] = self.smartchat.character_length
+        context['chat_uuid'] = self.smartchat.id
+        context['chat_character_limit'] = (
+            self.smartchat.owner.chatbot_character_limit
+        )
+        return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        chat_texts = ChatText.objects.filter(is_question=False)
+        if chat_texts:
+            initial['chat_text'] = chat_texts[0].answer
+        return initial
+
+    def form_valid(self, form):
+        submitted_text = form.cleaned_data['chat_text']
+        chat_text, created = ChatText.objects.get_or_create(
+            chat=self.smartchat, is_question=False
+        )
+        initial_length = 0
+        if not created:
+            initial_length = len(chat_text.answer)
+        chat_text.answer = submitted_text
+        chat_text.save()
+        self.smartchat.character_length += len(submitted_text) - initial_length
+        self.smartchat.save()
+        return self.render_to_response(self.get_context_data(form=form))
+
+    def form_invalid(self, form):
+        messages.error("Что-то пошло не так")
+        form = self.get_form()
+        return self.render_to_response(self.get_context_data(form=form))

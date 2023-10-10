@@ -12,6 +12,7 @@ class SmartChat(models.Model):
     active = models.BooleanField(default=False)
     name = models.CharField(max_length=50, default="Chat")
     created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     character_length = models.IntegerField(default=0)
 
 
@@ -21,8 +22,10 @@ def get_upload_path(instance, filename):
 
 
 class ChatFile(models.Model):
-    file = models.FileField(upload_to=get_upload_path,
-                            validators=[FileExtensionValidator(['txt', 'docx', 'pdf', 'html'])])
+    file = models.FileField(
+        upload_to=get_upload_path,
+        validators=[FileExtensionValidator(['txt', 'docx', 'pdf', 'html'])]
+    )
     file_name = models.CharField(max_length=256, blank=True)
     chat = models.ForeignKey(SmartChat, on_delete=models.CASCADE, related_name="files")
     character_length = models.IntegerField(default=0)
@@ -32,3 +35,13 @@ class ChatFile(models.Model):
         if not self.file_name:
             self.file_name = os.path.basename(self.file.name)
             super().save(*args, **kwargs)
+
+
+class ChatText(models.Model):
+    chat = models.ForeignKey(SmartChat, on_delete=models.CASCADE, related_name="texts")
+    is_question = models.BooleanField(default=True, db_index=True)
+    question = models.CharField(max_length=1000, blank=True,
+                                default='', db_index=True)
+    answer = models.TextField(max_length=10**5)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
