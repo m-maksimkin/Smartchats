@@ -28,7 +28,7 @@
 						<li class="nav-item clickable-nav-item">
 							<div class="row justify-content-between align-items-center btn-google rounded">
 								<div class="col-auto">
-									<a class="nav-link active" href="#">Вопрос-ответ</a>
+									<a class="nav-link active" href="{% url 'chats:add_questions' chat_uuid %}">Вопрос-ответ</a>
 								</div>
 								<div class="col-auto">
 									<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" class="text-gray-400 group-hover:text-violet-600 h-6 w-6 shrink-0">
@@ -53,12 +53,12 @@
 				</nav>
 
 <script>
-	var liElements = document.querySelectorAll('.clickable-nav-item');
+	const liElements = document.querySelectorAll('.clickable-nav-item');
 
 	liElements.forEach(function (liElement) {
-			liElement.addEventListener('click', function () {
-					var link = liElement.querySelector('a');
-					link.click();
-			});
+		liElement.addEventListener('click', function () {
+			const link = liElement.querySelector('a');
+			link.click();
+		});
 	});
 </script>

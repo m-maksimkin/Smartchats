@@ -107,12 +107,12 @@
 	const deleteIcons = document.querySelectorAll("[data-form-id]");
 
 	deleteIcons.forEach(function (deleteIcon) {
-			deleteIcon.addEventListener("click", function () {
-					const formId = this.getAttribute("data-form-id");
-					const deleteForm = document.getElementById(formId);
-					if (deleteForm) {
-							deleteForm.submit();
-					}
-			});
+		deleteIcon.addEventListener("click", function () {
+			const formId = this.getAttribute("data-form-id");
+			const deleteForm = document.getElementById(formId);
+			if (deleteForm) {
+				deleteForm.submit();
+			}
+		});
 	});
 {% endblock %}

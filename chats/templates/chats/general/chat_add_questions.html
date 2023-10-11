@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+	<div class="container-xxl pt-5">
+		<div class="container pb-4 pt-3">
+			<h1 class="text-center">Источники данных</h1>
+			<p class="text-muted text-center">Добавьте ваши данные для обучения чат-бота.</p>
+		</div>
+		<div class="row">
+			<div class="col-md-2 pe-4">
+				{% include 'chats/add_sources_navbar.html' %}
+			</div>
+
+			<div class="col-md-7 p-4 d-flex justify-content-center border flex-column">
+				<div>
+					<h3>Текст</h3>
+					<hr class="my-4">
+				</div>
+				<div class="container-fluid p-2 border">
+						<form class="question-form" method="post" action="{% url 'chats:create_question' chat_uuid %}">
+							{% csrf_token %}
+							{{ create_form.question.label_tag }}
+							{{ create_form.question }}
+							{{ create_form.answer.label_tag }}
+							{{ create_form.answer }}
+							<div class="py-2 d-flex justify-content-end align-items-center">
+								<input type="submit" value="Сохранить" class="btn btn-secondary" disabled>
+							</div>
+						</form>
+					</div>
+				{% for form in form_list %}
+					<div class="container-fluid p-2 border">
+					<div class="w-100 text-end">
+						<div id="delete-box-{{ forloop.counter }}" style="color: indianred; cursor: pointer;" data-form-id="delete-form-{{ forloop.counter }}">
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3" viewBox="0 0 16 16">
+								<path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11Zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5h9.916Zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"></path>
+							</svg>
+						</div>
+						<form id="delete-form-{{ forloop.counter }}" method="post" action="{% url 'chats:delete_question' chat_uuid form.instance.id %}" style="display: none">
+							{% csrf_token %}
+						</form>
+					</div>
+						<form class="question-form" method="post" action="{% url 'chats:update_question' chat_uuid form.instance.id %}">
+							{% csrf_token %}
+							{{ form.question.label_tag }}
+							{{ form.question }}
+							{{ form.answer.label_tag }}
+							{{ form.answer }}
+							<div class="py-2 d-flex justify-content-end align-items-center">
+								<input type="submit" value="Сохранить" class="btn btn-secondary" disabled>
+							</div>
+						</form>
+					</div>
+				{% endfor %}
+			</div>
+
+			<div class="col-md-3">
+				<div class=" border p-4">
+					<div class="text-center fw-bold mb-2">Источники</div>
+						<div class="mb-4"></div>
+								<span class="">Всего обнаружено символов </span>
+								<span class="d-flex justify-content-center">
+									<span class="fw-bold">{{ smartchat_characters }}</span>
+									<span class="text-muted"> / {{ chat_character_limit|intcomma }}</span>
+								</span>
+							<button class="btn btn-dark w-100 mt-4" type="submit">Create Chatbot</button>
+				</div>
+			</div>
+
+		</div>
+	</div>
+{% endblock %}
+
+{% block domready %}
+	const forms = document.querySelectorAll(".question-form");
+
+	forms.forEach(function (form) {
+		const formFields = form.querySelectorAll("textarea");
+		const submitBtn = form.querySelector("input[type='submit']");
+
+		function enableSubmitButton() {
+			submitBtn.removeAttribute("disabled");
+		}
+
+		formFields.forEach(function (field) {
+			field.addEventListener("input", enableSubmitButton);
+		});
+	});
+
+	const deleteIcons = document.querySelectorAll("[data-form-id]");
+
+	deleteIcons.forEach(function (deleteIcon) {
+		deleteIcon.addEventListener("click", function () {
+			const formId = this.getAttribute("data-form-id");
+			const deleteForm = document.getElementById(formId);
+			if (deleteForm) {
+				deleteForm.submit();
+			}
+		});
+	});
+{% endblock %}

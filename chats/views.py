@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404, reverse
 from django.views.generic import View, ListView, TemplateView, FormView
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import SmartChat, ChatFile, ChatText
 from . import forms
@@ -114,7 +115,8 @@ class FilesSubmitView(LoginRequiredMixin, View):
         return redirect(reverse('chats:add_files', kwargs={'chat_uuid': chat_uuid}))
 
 
-@login_required()
+@login_required
+@require_POST
 def chat_file_delete(request, chat_uuid, file_id):
     chat = get_object_or_404(SmartChat, id=chat_uuid, owner=request.user)
     file = get_object_or_404(ChatFile, chat=chat, pk=file_id)
@@ -151,7 +153,7 @@ class AddTextView(LoginRequiredMixin, FormView):
 
     def get_initial(self):
         initial = super().get_initial()
-        chat_texts = ChatText.objects.filter(is_question=False)
+        chat_texts = ChatText.objects.filter(chat=self.smartchat, is_question=False)
         if chat_texts:
             initial['chat_text'] = chat_texts[0].answer
         return initial
@@ -171,6 +173,74 @@ class AddTextView(LoginRequiredMixin, FormView):
         return self.render_to_response(self.get_context_data(form=form))
 
     def form_invalid(self, form):
-        messages.error("Что-то пошло не так")
+        messages.error(self.request, "Что-то пошло не так")
         form = self.get_form()
         return self.render_to_response(self.get_context_data(form=form))
+
+
+class AddQuestionListView(LoginRequiredMixin, TemplateView):
+    template_name = 'chats/general/chat_add_questions.html'
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.smartchat = None
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        chat_uuid = self.kwargs.get('chat_uuid')
+        self.smartchat = get_object_or_404(SmartChat, id=chat_uuid,
+                                           owner=self.request.user)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['smartchat_characters'] = self.smartchat.character_length
+        context['chat_uuid'] = self.smartchat.id
+        context['chat_character_limit'] = (
+            self.smartchat.owner.chatbot_character_limit
+        )
+        questions_queryset = (
+            self.smartchat.texts.filter(is_question=True).order_by('created')
+        )
+        form_list = []
+        for question in questions_queryset:
+            form_list.append(forms.ChatAddQuestionForm(instance=question))
+        context['form_list'] = form_list
+        context['create_form'] = forms.ChatAddQuestionForm()
+        return context
+
+
+@login_required
+@require_POST
+def update_chat_question(request, chat_uuid, question_id=None):
+    chat = get_object_or_404(SmartChat, id=chat_uuid, owner=request.user)
+    if question_id:
+        question = get_object_or_404(ChatText, chat=chat, pk=question_id)
+        initial_len = len(question.question) + len(question.answer)
+    else:
+        question = ChatText(chat=chat)
+        initial_len = 0
+    form = forms.ChatAddQuestionForm(request.POST, instance=question)
+    if form.is_valid():
+        cl = form.cleaned_data
+        form.save()
+        chat.character_length += (len(cl.get('question')) + len(cl.get('answer'))
+                                  - initial_len)
+        chat.save()
+        return redirect(reverse('chats:add_questions', args=[chat_uuid]))
+    else:
+        messages.error(request, "Что-то пошло не так")
+        return redirect(reverse('chats:add_questions', args=[chat_uuid]))
+
+
+@login_required
+@require_POST
+def chat_question_delete(request, chat_uuid, question_id):
+    chat = get_object_or_404(SmartChat, id=chat_uuid, owner=request.user)
+    question = get_object_or_404(ChatText, chat=chat, pk=question_id)
+    question_len = len(question.question) + len(question.answer)
+    chat.character_length -= question_len
+    question.delete()
+    chat.save()
+    return redirect(reverse('chats:add_questions', kwargs={'chat_uuid': chat_uuid}))
