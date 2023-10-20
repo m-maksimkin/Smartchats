@@ -5,6 +5,11 @@
     background-color: lightgrey;
 }
 
+.btn-outline-danger {
+    background-color: white;
+    /*border: indianred;*/
+}
+
 .px-6 {
   padding-left: 9rem !important;
   padding-right: 9rem !important;
@@ -14,3 +19,12 @@
   padding-top: 4rem !important;
   padding-bottom: 4rem !important;
 }
+
+#messages-container {
+    position: fixed;
+    top: 10%;
+    left: 70%;
+    width: 30%;
+    z-index: 1000;
+}
+

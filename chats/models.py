@@ -18,7 +18,10 @@ class SmartChat(models.Model):
 
 def get_upload_path(instance, filename):
     chat_id = instance.chat.id
-    return f"{chat_id}/source_files/{filename}"
+    if isinstance(instance, ChatURL):
+        return f"{chat_id}/source_files/crawl_response/{filename}"
+    else:
+        return f"{chat_id}/source_files/{filename}"
 
 
 class ChatFile(models.Model):
@@ -38,10 +41,25 @@ class ChatFile(models.Model):
 
 
 class ChatText(models.Model):
-    chat = models.ForeignKey(SmartChat, on_delete=models.CASCADE, related_name="texts")
+    chat = models.ForeignKey(SmartChat, on_delete=models.CASCADE,
+                             related_name="texts")
     is_question = models.BooleanField(default=True, db_index=True)
     question = models.CharField(max_length=1000, blank=True,
                                 default='', db_index=True)
     answer = models.TextField(max_length=10**5)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+
+class ChatURL(models.Model):
+    chat = models.ForeignKey(SmartChat, on_delete=models.CASCADE,
+                             related_name="urls")
+    url = models.URLField()
+    # url_html_response = models.FileField(
+    #     upload_to=get_upload_path,
+    #     validators=[FileExtensionValidator(['html'])]
+    # )
+    url_text = models.TextField(max_length=500000)
+    character_length = models.IntegerField(default=0)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)

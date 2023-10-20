@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from . import models
 
 
@@ -33,3 +34,12 @@ class ChatAddQuestionForm(forms.ModelForm):
 ChatQuestionFormSet = forms.modelformset_factory(
     models.ChatText, form=ChatAddQuestionForm, extra=0,
 )
+
+
+class ChatCrawlUrlForm(forms.Form):
+    crawl_url = forms.CharField(
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://www.example.com',
+        })
+    )

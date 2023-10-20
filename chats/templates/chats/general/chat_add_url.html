@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load crispy_forms_filters %}
+
+{% block content %}
+	<div class="container-xxl pt-5">
+		<div class="container pb-4 pt-3">
+			<h1 class="text-center">Источники данных</h1>
+			<p class="text-muted text-center">Добавьте ваши данные для обучения чат-бота.</p>
+		</div>
+		<div class="row">
+			<div class="col-md-2 pe-4">
+				{% include 'chats/add_sources_navbar.html' %}
+			</div>
+
+			<div class="col-md-7 p-4 d-flex justify-content-center border flex-column">
+				<div>
+					<h3>Сайт</h3>
+					<hr class="my-4">
+				</div>
+				<div class="container d-flex flex-column justify-content-start pt-4 px-0" style="min-height: 25vh;">
+					<form class="w-100" action="{% url 'chats:add_url' chat_uuid %}" method="post" id="crawl-url-form">
+						{% csrf_token %}
+						<div class="d-flex flex-row">
+							{{ form.crawl_url }}
+							<button type="submit" id="submit-url" class="btn btn-lg btn-dark ms-2 text-nowrap">
+								отправить
+							</button>
+						</div>
+						<span id="url-input-error" class="text-danger" style="display: none">неправильный url</span>
+					</form>
+					<span class="text-muted pt-3">Добавьте ссылку на ваш вебсайт, мы соберем всю доступную текстовую информацию за исключением файлов.</span>
+				</div>
+				{% if chat_urls %}
+					<div class="d-flex align-items-center mt-4 mb-2">
+						<hr class="w-100 my-4">
+						<span class="px-2 text-nowrap">Добавленные ссылки</span>
+						<hr class="w-100 my-4">
+					</div>
+					<div class="d-flex justify-content-end">
+						<form method="post" action="{% url 'chats:delete_all_urls' chat_uuid %}" id="delete-all-form">
+							{% csrf_token %}
+						<button class="btn-outline-danger rounded-2" id="delete-all-button">Удалить все</button>
+						</form>
+					</div>
+					{% for chat_url in chat_urls %}
+						<div class="d-flex align-items-center justify-content-between pt-4" id="url-container-{{ forloop.counter }}">
+								<input type="text" class="form-control fw-bold" value="{{ chat_url.url|slice:':80' }}">
+								<span class="text-muted ps-2" style="white-space: nowrap; font-size: 13px;">{{ chat_url.character_length }}</span>
+							<div id="delete-box-{{ forloop.counter }}" class="ps-2" style="color: indianred; cursor: pointer;" data-form-id="delete-form-{{ forloop.counter }}">
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3" viewBox="0 0 16 16">
+									<path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11Zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5h9.916Zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"></path>
+								</svg>
+							</div>
+						<form id="delete-form-{{ forloop.counter }}" method="post" action="{% url 'chats:delete_url' chat_uuid chat_url.id %}" style="display: none">
+							{% csrf_token %}
+{#							<input type="hidden" value="{{ forloop.counter0 }}" name="anchor" required>#}
+						</form>
+						</div>
+					{% endfor %}
+				{% endif %}
+			</div>
+
+			<div class="col-md-3">
+				<div class=" border p-4">
+					<div class="text-center fw-bold mb-2">Источники</div>
+						<div class="mb-4"></div>
+								<span class="">Всего обнаружено символов </span>
+								<span class="d-flex justify-content-center">
+									<span class="fw-bold">{{ smartchat_characters }}</span>
+									<span class="text-muted"> / {{ chat_character_limit|intcomma }}</span>
+								</span>
+							<button class="btn btn-dark w-100 mt-4" type="submit">Create Chatbot</button>
+				</div>
+			</div>
+
+		</div>
+	</div>
+{% endblock %}
+
+{% block domready %}
+
+	const crawlUrlInput = document.getElementById('id_crawl_url');
+	const urlError = document.getElementById('url-input-error');
+
+	crawlUrlInput.addEventListener('input', function () {
+			const enteredValue = crawlUrlInput.value;
+			if (enteredValue.trim() === '' || isValidURL(enteredValue)) {
+					urlError.style.display = 'none';
+			} else {
+					urlError.style.display = 'block';
+			}
+	});
+
+	function isValidURL(url) {
+			var urlPattern = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/;
+			return urlPattern.test(url);
+	}
+
+
+	const deleteIcons = document.querySelectorAll("[data-form-id]");
+
+	deleteIcons.forEach(function (deleteIcon) {
+		deleteIcon.addEventListener("click", function () {
+			const formId = this.getAttribute("data-form-id");
+			const deleteForm = document.getElementById(formId);
+			if (deleteForm) {
+				deleteForm.submit();
+			}
+		});
+	});
+
+
+	const submitButton = document.getElementById('submit-url');
+
+	submitButton.addEventListener('click', function (event) {
+		event.preventDefault();
+		if (isValidURL(crawlUrlInput.value)){
+			submitButton.classList.add('disabled');
+			submitButton.innerHTML = 'Обработка...<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+			form = document.getElementById('crawl-url-form').submit();
+		} else {
+			urlError.style.display = 'block';
+		}
+	});
+
+	const deleteButton = document.getElementById('delete-all-button');
+	deleteButton.addEventListener('click', function(event){
+		event.preventDefault();
+		if (confirm("Вы уверены, что хотите удалить все ссылки?")) {
+			document.getElementById("delete-all-form").submit();
+		}
+	});
+
+{% endblock %}

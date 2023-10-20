@@ -25,4 +25,11 @@ urlpatterns = [
          views.update_chat_question, name='update_question'),
     path('<uuid:chat_uuid>/delete-question/<int:question_id>/',
          views.chat_question_delete, name='delete_question'),
+
+    path('<uuid:chat_uuid>/add-url/', views.ChatAddURL.as_view(),
+         name='add_url'),
+    path('<uuid:chat_uuid>/delete-url/<int:url_id>/', views.chat_url_delete,
+         name='delete_url'),
+    path('<uuid:chat_uuid>/delete-all-urls/', views.chat_url_delete,
+         name='delete_all_urls'),
 ]
