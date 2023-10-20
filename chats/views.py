@@ -3,8 +3,10 @@ from django.views.generic import View, ListView, TemplateView, FormView
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import SmartChat, ChatFile, ChatText
+from .models import SmartChat, ChatFile, ChatText, ChatURL
+from django.db.models import Sum
 from . import forms
+from .utils import crawl_url
 from django.contrib import messages
 from django.http import HttpResponse, FileResponse
 
@@ -244,3 +246,53 @@ def chat_question_delete(request, chat_uuid, question_id):
     question.delete()
     chat.save()
     return redirect(reverse('chats:add_questions', kwargs={'chat_uuid': chat_uuid}))
+
+
+class ChatAddURL(LoginRequiredMixin, FormView):
+    template_name = 'chats/general/chat_add_url.html'
+    form_class = forms.ChatCrawlUrlForm
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.smartchat = None
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        chat_uuid = self.kwargs.get('chat_uuid')
+        self.smartchat = get_object_or_404(SmartChat, id=chat_uuid,
+                                           owner=self.request.user)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['smartchat_characters'] = self.smartchat.character_length
+        context['chat_uuid'] = self.smartchat.id
+        context['chat_character_limit'] = (
+            self.smartchat.owner.chatbot_character_limit
+        )
+        context['chat_urls'] = self.smartchat.urls.all().order_by('created')
+        return context
+
+    def form_valid(self, form):
+        url = form.cleaned_data['crawl_url']
+        crawl_url(url, self.smartchat, self.request)
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+@login_required
+@require_POST
+def chat_url_delete(request, chat_uuid, url_id=None):
+    chat = get_object_or_404(SmartChat, id=chat_uuid, owner=request.user)
+    if url_id is None:
+        all_urls = chat.urls.all()
+        total_length = all_urls.aggregate(total_length=Sum('character_length'))['total_length']
+        chat.character_length -= total_length
+        all_urls.delete()
+        chat.save()
+        return redirect(reverse('chats:add_url', kwargs={'chat_uuid': chat_uuid}))
+    chat_url = get_object_or_404(ChatURL, chat=chat, pk=url_id)
+    chat.character_length -= chat_url.character_length
+    chat_url.delete()
+    chat.save()
+    return redirect(reverse('chats:add_url', kwargs={'chat_uuid': chat_uuid}))
