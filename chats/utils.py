@@ -6,7 +6,10 @@ from collections import deque
 from .models import ChatURL
 from django.core.files.base import ContentFile
 from django.contrib import messages
+import logging
 
+
+logger = logging.getLogger(__name__)
 
 FileExtensions = [
     '.jpg', '.jpeg', '.png', '.gif', '.pdf', '.doc',
@@ -28,7 +31,7 @@ def crawl_url(start_url, chat, request):
         try:
             r = requests.get(url)
         except requests.exceptions.RequestException:
-            print(f"Failed to crawl: {url}")
+            logger.info(f"Failed to crawl: {url}")
             continue
         if not r.status_code:
             continue
