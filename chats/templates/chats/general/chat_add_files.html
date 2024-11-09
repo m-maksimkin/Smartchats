@@ -73,6 +73,9 @@
 {% endblock %}
 
 {% block domready %}
+<script>
+   document.addEventListener('DOMContentLoaded', (event) => {
+   // DOM loaded
 	const fileDropArea = document.getElementById('file-drop-area');
 	const fileInput = document.getElementById('file-input');
 	const fileForm = document.getElementById('file-send-form');
@@ -115,4 +118,6 @@
 			}
 		});
 	});
+  })
+</script>
 {% endblock %}

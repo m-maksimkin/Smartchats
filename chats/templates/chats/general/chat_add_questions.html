@@ -74,6 +74,9 @@
 {% endblock %}
 
 {% block domready %}
+ <script>
+   document.addEventListener('DOMContentLoaded', (event) => {
+   // DOM loaded
 	const forms = document.querySelectorAll(".question-form");
 
 	forms.forEach(function (form) {
@@ -99,5 +102,7 @@
 				deleteForm.submit();
 			}
 		});
-	});
+    });
+   })
+</script>
 {% endblock %}

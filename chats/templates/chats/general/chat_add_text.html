@@ -50,10 +50,15 @@
 {% endblock %}
 
 {% block domready %}
+<script>
+   document.addEventListener('DOMContentLoaded', (event) => {
+   // DOM loaded
 	var chatTextArea = document.getElementById('id_chat_text');
 	var charCountDiv = document.getElementById('char-count');
 
 	chatTextArea.addEventListener('input', function () {
 		charCountDiv.textContent = chatTextArea.value.length;
 	});
+  })
+</script>
 {% endblock %}
