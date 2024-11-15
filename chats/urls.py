@@ -32,4 +32,7 @@ urlpatterns = [
          name='delete_url'),
     path('<uuid:chat_uuid>/delete-all-urls/', views.chat_url_delete,
          name='delete_all_urls'),
+
+    path('<uuid:chat_uuid>/create-chatbot/', views.initiate_chat_creation, name='create_chatbot'),
+    path('<uuid:chat_uuid>/playground/', views.ChatPlayground.as_view(), name='chat_playground'),
 ]

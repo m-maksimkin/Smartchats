@@ -41,7 +41,12 @@
 									<span class="fw-bold">{{ smartchat_characters }}</span>
 									<span class="text-muted"> / {{ chat_character_limit|intcomma }}</span>
 								</span>
-							<button class="btn btn-dark w-100 mt-4" type="submit">Create Chatbot</button>
+                            <button class="btn btn-dark w-100 mt-4" type="submit" data-form-id="create-chat-form">
+                                <form id="create-chat-form" method="post" action="{% url 'chats:create_chatbot' chat_uuid %}">
+                                    {% csrf_token %}
+                                </form>
+                                {% if smartchat_active %}Retrain Chatbot{% else %}Create Chatbot{% endif %}
+                            </button>
 				</div>
 			</div>
 
@@ -59,6 +64,17 @@
 	chatTextArea.addEventListener('input', function () {
 		charCountDiv.textContent = chatTextArea.value.length;
 	});
+
+    const deleteIcons = document.querySelectorAll("[data-form-id]");
+	deleteIcons.forEach(function (deleteIcon) {
+		deleteIcon.addEventListener("click", function () {
+			const formId = this.getAttribute("data-form-id");
+			const deleteForm = document.getElementById(formId);
+			if (deleteForm) {
+				deleteForm.submit();
+			}
+		});
+    });
   })
 </script>
 {% endblock %}

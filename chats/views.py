@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import SmartChat, ChatFile, ChatText, ChatURL
+from django.db import connection
 from django.db.models import Sum
 from . import forms
 from .utils import crawl_url
@@ -69,6 +70,7 @@ class AddFilesListView(LoginRequiredMixin, ListView):
         context['chat_character_limit'] = (
             self.smartchat.owner.chatbot_character_limit
         )
+        context['smartchat_active'] = self.smartchat.active
         return context
 
 
@@ -151,6 +153,7 @@ class AddTextView(LoginRequiredMixin, FormView):
         context['chat_character_limit'] = (
             self.smartchat.owner.chatbot_character_limit
         )
+        context['smartchat_active'] = self.smartchat.active
         return context
 
     def get_initial(self):
@@ -202,6 +205,7 @@ class AddQuestionListView(LoginRequiredMixin, TemplateView):
         context['chat_character_limit'] = (
             self.smartchat.owner.chatbot_character_limit
         )
+        context['smartchat_active'] = self.smartchat.active
         questions_queryset = (
             self.smartchat.texts.filter(is_question=True).order_by('created')
         )
@@ -271,6 +275,7 @@ class ChatAddURL(LoginRequiredMixin, FormView):
         context['chat_character_limit'] = (
             self.smartchat.owner.chatbot_character_limit
         )
+        context['smartchat_active'] = self.smartchat.active
         context['chat_urls'] = self.smartchat.urls.all().order_by('created')
         return context
 
@@ -296,3 +301,35 @@ def chat_url_delete(request, chat_uuid, url_id=None):
     chat_url.delete()
     chat.save()
     return redirect(reverse('chats:add_url', kwargs={'chat_uuid': chat_uuid}))
+
+
+@login_required
+@require_POST
+def initiate_chat_creation(request, chat_uuid):
+    chat = get_object_or_404(SmartChat.objects.select_related('owner'), id=chat_uuid, owner=request.user)
+    chars = chat.owner.chatbot_character_limit - chat.character_length
+    if chars >= 0:
+        chat.active = True
+        chat.save()
+        messages.warning(request, 'Обучение чатбота запущено')
+        # clear index in cache
+        return redirect('chats:chat_playground', chat_uuid)
+    messages.error(request, 'Превышен лимит доступных символов для чатбота')
+    referer_url = request.META.get('HTTP_REFERER', reverse('chats:add_files', kwargs={'chat_uuid': chat_uuid}))
+    return redirect(referer_url)
+
+
+class ChatPlayground(LoginRequiredMixin, TemplateView):
+    template_name = 'chats/created_chats/playground.html'
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.smartchat = None
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        chat_uuid = self.kwargs.get('chat_uuid')
+        self.smartchat = get_object_or_404(SmartChat, id=chat_uuid,
+                                           owner=self.request.user)
+        return super().dispatch(request, *args, **kwargs)
