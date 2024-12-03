@@ -35,6 +35,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -51,6 +52,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+    'channels',
 
     'accounts.apps.AccountsConfig',
     'chats.apps.ChatsConfig',
@@ -86,7 +88,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'Smartchats.wsgi.application'
-
+ASGI_APPLICATION = 'Smartchats.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases

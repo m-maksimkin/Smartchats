@@ -2,7 +2,48 @@
 {% load static %}
 
 {% block content %}
+  <div id="chat">
+  </div>
+  <div id="chat-input">
+    <input id="chat-message-input" type="text">
+    <input id="chat-message-submit" type="submit" value="Send">
+  </div>
 {% endblock %}
 
 {% block domready %}
+  <script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+     const url = 'ws://' + window.location.host + '/ws/chats/056f9cf1-1f9c-4c7f-9181-da126ba4b47e/';
+     const chatSocket = new WebSocket(url);
+
+     chatSocket.onmessage = function(event) {
+       const data = JSON.parse(event.data);
+       const chat = document.getElementById('chat');
+       chat.innerHTML += '<div>' +
+       data.message + '</div>';
+       chat.scrollTop = chat.scrollHeight;
+     };
+     chatSocket.onclose = function(event) {
+      console.error('Chat socket closed unexpectedly');
+     };
+
+     const input = document.getElementById('chat-message-input');
+     const submitButton = document.getElementById('chat-message-submit');
+     submitButton.addEventListener('click', function(event) {
+       const message = input.value;
+       if(message) {
+         chatSocket.send(JSON.stringify({'message': message}));
+         input.value = '';
+         input.focus();
+       }
+     });
+     input.addEventListener('keypress', function(event) {
+       if (event.key === 'Enter') {
+         event.preventDefault();
+         submitButton.click();
+       }
+     });
+
+   })
+  </script>
 {% endblock %}
