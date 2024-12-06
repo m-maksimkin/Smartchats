@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block content %}
-
+  {{ chat_uuid|json_script:"chat-uuid" }}
   <div class="container d-flex justify-content-center mt-4">
     <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
       <div class="card">
@@ -28,7 +28,8 @@
 {% block domready %}
   <script>
     document.addEventListener('DOMContentLoaded', (event) => {
-     const url = 'ws://' + window.location.host + '/ws/chats/056f9cf1-1f9c-4c7f-9181-da126ba4b47e/';
+     const chatUuid = JSON.parse(document.getElementById('chat-uuid').textContent);
+     const url = 'ws://' + window.location.host + '/ws/chats/' + chatUuid + '/';
      const chatSocket = new WebSocket(url);
 
      chatSocket.onmessage = function(event) {

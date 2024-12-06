@@ -333,3 +333,8 @@ class ChatPlayground(LoginRequiredMixin, TemplateView):
         self.smartchat = get_object_or_404(SmartChat, id=chat_uuid,
                                            owner=self.request.user)
         return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['chat_uuid'] = self.smartchat.id
+        return context

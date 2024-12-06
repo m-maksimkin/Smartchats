@@ -16,7 +16,7 @@
 			<div class="row">
 				{% for chat in chats_list %}
 				<div class="col-md-3">
-					<a href="#" class="card text-reset text-decoration-none">
+					<a href="{% url 'chats:chat_playground' chat.id %}" class="card text-reset text-decoration-none">
 						<img src="{% static 'img/favicon.png' %}" class="card-img-top" alt="{{ chat.name }}">
 						<div class="card-body">
 							<h5 class="card-title text-center">{{ chat.name }}</h5>
