@@ -100,6 +100,18 @@ DATABASES = {
     }
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/0",
+
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+        "KEY_PREFIX": "smartchats"
+    }
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -172,7 +184,7 @@ LOGGING = {
     },
     "root": {
         "handlers": ['file', 'console'],
-        "level": "INFO",
+        "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
     },
     'loggers': {
         'django': {
@@ -212,8 +224,9 @@ DEFAULT_FROM_EMAIL = str(os.getenv('EMAIL_HOST_USER'))
 EMAIL_HOST_PASSWORD = str(os.getenv('EMAIL_HOST_PASSWORD'))
 
 
-CELERY_RESULT_BACKEND = 'rpc://'
-
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/1'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/2'
+CELERY_RESULT_EXPIRES = 3600
 
 SITE_ID = 1
 SOCIALACCOUNT_LOGIN_ON_GET = True
