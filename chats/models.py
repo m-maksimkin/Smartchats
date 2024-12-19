@@ -63,3 +63,12 @@ class ChatURL(models.Model):
     character_length = models.IntegerField(default=0)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+
+
+class ChatIndex(models.Model):
+    chat = models.ForeignKey(SmartChat, on_delete=models.CASCADE,
+                             related_name="index")
+    need_update = models.BooleanField(default=False)
+    index_dir = models.CharField(max_length=255, blank=True, default='')
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
