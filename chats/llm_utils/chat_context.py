@@ -1,5 +1,6 @@
 import os.path
 import asyncio
+import logging
 
 from asgiref.sync import sync_to_async
 from django.core.cache import cache
@@ -7,6 +8,7 @@ from django.conf import settings
 
 from llama_index.core import VectorStoreIndex, Document, Settings, SimpleDirectoryReader,\
     StorageContext, load_index_from_storage
+from llama_index.core.callbacks import CallbackManager
 from llama_index.core.ingestion import IngestionPipeline, DocstoreStrategy
 from llama_index.core.storage.docstore import SimpleDocumentStore
 from llama_index.core.vector_stores.simple import SimpleVectorStore
@@ -15,10 +17,15 @@ from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.embeddings.openai import OpenAIEmbedding
 
+from .custom_llama_logger import CustomLlamaInfoHandler
 from ..models import SmartChat, ChatIndex, ChatText, ChatURL, ChatFile
 
 
+logger = logging.getLogger(__name__)
+llama_info_handler = CustomLlamaInfoHandler(logger=logger)
 Settings.llm = OpenAI(model="gpt-4o-mini-2024-07-18")
+Settings.callback_manager = CallbackManager(handlers=[llama_info_handler])
+
 
 class IndexManager:
     _indexes: dict[str, VectorStoreIndex] = {}
