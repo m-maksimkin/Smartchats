@@ -74,7 +74,7 @@ class IndexManager:
                 chat_index = await sync_to_async(ChatIndex.objects.get)(chat_id=chat_uuid)
             except ChatIndex.DoesNotExist:
                 chat_index = None
-            if chat_index and not chat_index.need_update:
+            if chat_index:
                 path_to_index = os.path.join(settings.MEDIA_ROOT, chat_uuid, 'index')
                 storage_context = await sync_to_async(StorageContext.from_defaults,
                                                       thread_sensitive=False)(persist_dir=path_to_index)
