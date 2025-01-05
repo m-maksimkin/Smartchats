@@ -7,11 +7,12 @@ from django.core.cache import cache
 from django.conf import settings
 
 from llama_index.core import VectorStoreIndex, Document, Settings, SimpleDirectoryReader,\
-    StorageContext, load_index_from_storage
+    StorageContext, load_index_from_storage, ChatPromptTemplate
 from llama_index.core.callbacks import CallbackManager
 from llama_index.core.ingestion import IngestionPipeline, DocstoreStrategy
 from llama_index.core.storage.docstore import SimpleDocumentStore
 from llama_index.core.vector_stores.simple import SimpleVectorStore
+from llama_index.core.prompts import PromptTemplate, ChatMessage
 from llama_index.llms.openai import OpenAI
 
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
@@ -25,6 +26,35 @@ logger = logging.getLogger(__name__)
 llama_info_handler = CustomLlamaInfoHandler(logger=logger)
 Settings.llm = OpenAI(model="gpt-4o-mini-2024-07-18")
 Settings.callback_manager = CallbackManager(handlers=[llama_info_handler])
+
+
+TEXT_QA_TEMPLATE_MESSAGES = [
+    ChatMessage(
+        role="system",
+        content=(
+            "Вы - экспертная система вопросов и ответов, которой доверяют во всем мире.\n"
+            "Всегда отвечайте на запрос, используя предоставленную контекстную информацию, "
+            "а не предыдущие знания.\n"
+            "Вот некоторые правила, которым нужно следовать:\n"
+            "1. Никогда не ссылайтесь напрямую на предоставленный контекст в своем ответе.\n"
+            "2. Избегайте таких выражений, как 'Основываясь на контексте, ...' или "
+            "'Контекстная информация ...' или чего-либо подобного."
+        ),
+    ),
+    ChatMessage(
+        role="user",
+        content=(
+            "Контекстная информация приведена ниже.\n"
+            "---------------------\n"
+            "{context_str}\n"
+            "---------------------\n"
+            "Учитывая контекстную информацию и не используя предыдущие знания, "
+            "ответьте на запрос.\n"
+            "Запрос: {query_str}\n"
+            "Ответ: "
+        ),
+    ),
+]
 
 
 class IndexManager:
@@ -123,3 +153,9 @@ class IndexManager:
     @sync_to_async(thread_sensitive=False)
     def _load_files_sync(cls, filepaths):
         return SimpleDirectoryReader(input_files=filepaths, filename_as_id=True).load_data()
+
+
+def get_chat_prompt_templates(chat_uuid):
+    chat_prompts = {'text_qa_template': ChatPromptTemplate.from_messages(message_templates=TEXT_QA_TEMPLATE_MESSAGES)}
+    #  load chat specific system prompt
+    return chat_prompts
