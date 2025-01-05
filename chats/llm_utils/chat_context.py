@@ -74,20 +74,24 @@ class IndexManager:
                 index = cls._indexes.get(chat_uuid)
                 if index is not None:
                     if not chat_index.need_update:
+                        logger.info(f'Retrieved index from IndexManager for chat {chat_uuid}')
                         return index
                     else:
                         del cls._indexes[chat_uuid]
+                        logger.info(f'Deleted outdated index from IndexManager for chat {chat_uuid}')
 
                 path_to_index = os.path.join(settings.MEDIA_ROOT, chat_uuid, 'index')
                 storage_context = await sync_to_async(StorageContext.from_defaults,
                                                       thread_sensitive=False)(persist_dir=path_to_index)
                 embed_model = await cls.get_embed_model()
                 index = load_index_from_storage(storage_context=storage_context, embed_model=embed_model)
+                logger.info(f'Loaded index from disk for chat {chat_uuid}')
                 if not chat_index.need_update:
                     cls._indexes[chat_uuid] = index
                     return cls._indexes[chat_uuid]
 
                 else:
+                    logger.info(f'Updating index for chat {chat_uuid}')
                     documents = await cls.get_documents_for_chat(chat_uuid)
                     pipeline = IngestionPipeline(
                         docstore=index.docstore,
@@ -118,6 +122,7 @@ class IndexManager:
             await sync_to_async(storage_context.persist, thread_sensitive=False)(path_to_store_index)
             await sync_to_async(ChatIndex.objects.get_or_create)(chat_id=chat_uuid)
             cls._indexes[chat_uuid] = index
+            logger.info(f'Created index for chat {chat_uuid}')
             return cls._indexes[chat_uuid]
 
     @classmethod
