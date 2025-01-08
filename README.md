@@ -1,6 +1,9 @@
 # Smartchats
-### Проект нацелен на создание сервиса, предоставляющего возможность создавать чат-бота на основе пользовательских документов и gpt. Такой бот, учитывающий пользовательский контекст и использующий современные языковые модели для генерации ответов может эффективно заменить сотрудников-консультантов на сайтах.
-### На данном этапе имплементирована аутентификация email / google OAuth, а также пополнение материалов для чат-бота в виде файлов, текста, вопросов-ответов и ссылок на вебсайт.
+### Проект представляет собой сервис для создания чат-ботов на основе пользовательских данных и большой языковой модели (LLM) с применением подхода Retrieval-Augmented Generation (RAG). Это позволяет создавать ботов, учитывающих контекст загруженных пользователем документов.
+
+### На данный момент реализованы следующие возможности: аутентификация через email / Google OAuth, а также загрузка данных для чат-бота в форматах файлов, текста, вопросов-ответов и ссылки на сайт. Дополнительно реализована песочница для тестирования созданных чат-ботов.
 ![authentication](https://github.com/m-maksimkin/Smartchats/blob/main/accounts/static/img/images_for_readme/authentication.jpg)
 ![authentication](https://github.com/m-maksimkin/Smartchats/blob/main/accounts/static/img/images_for_readme/file_as_source.jpg)
-![authentication](https://github.com/m-maksimkin/Smartchats/blob/main/accounts/static/img/images_for_readme/url_as_source.jpg)
+![image](https://github.com/user-attachments/assets/034b03ca-739d-4326-b048-774343e5fb16)
+![image](https://github.com/user-attachments/assets/55ed2a4e-147e-4f38-b565-b464ca0d73a8)
+
