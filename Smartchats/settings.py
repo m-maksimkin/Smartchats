@@ -175,6 +175,7 @@ LOGGING = {
             'maxBytes': 1024*1024*5,
             'formatter': 'verbose',
             'encoding': 'utf-8',
+            # 'backupCount': 3,  # windows filesystem causes file rotation to fail
         },
         'console': {
             'level': 'DEBUG',
