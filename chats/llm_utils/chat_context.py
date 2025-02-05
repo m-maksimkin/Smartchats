@@ -19,6 +19,7 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.embeddings.openai import OpenAIEmbedding
 
 from .custom_llama_logger import CustomLlamaInfoHandler
+from .delete_safe_ingestion_pipeline import DeleteSafeIngestionPipeline
 from ..models import SmartChat, ChatIndex, ChatText, ChatURL, ChatFile
 
 
@@ -93,13 +94,14 @@ class IndexManager:
                 else:
                     logger.info(f'Updating index for chat {chat_uuid}')
                     documents = await cls.get_documents_for_chat(chat_uuid)
-                    pipeline = IngestionPipeline(
+                    pipeline = DeleteSafeIngestionPipeline(
                         docstore=index.docstore,
                         vector_store=index.vector_store,
                         docstore_strategy=DocstoreStrategy.UPSERTS_AND_DELETE,
-                        transformations=[embed_model],
+                        transformations=[*Settings.transformations, embed_model],
                     )
                     nodes = await pipeline.arun(documents=documents)
+                    index.insert_nodes(nodes)
                     chat_index.need_update = False
                     await sync_to_async(chat_index.save)()
                     await sync_to_async(storage_context.persist, thread_sensitive=False)(path_to_index)
@@ -112,8 +114,15 @@ class IndexManager:
             vector_store = SimpleVectorStore()
             storage_context = StorageContext.from_defaults(docstore=docstore, vector_store=vector_store)
             embed_model = await cls.get_embed_model()
-            index = await sync_to_async(VectorStoreIndex.from_documents, thread_sensitive=False)(
-                documents,
+            pipeline = DeleteSafeIngestionPipeline(
+                docstore=docstore,
+                vector_store=vector_store,
+                docstore_strategy=DocstoreStrategy.UPSERTS_AND_DELETE,
+                transformations=[*Settings.transformations, embed_model],
+            )
+            nodes = await pipeline.arun(documents=documents)
+            index = await sync_to_async(VectorStoreIndex, thread_sensitive=True)(
+                nodes,
                 storage_context=storage_context,
                 embed_model=embed_model,
             )
