@@ -24,6 +24,10 @@
 				</div>
 				{% endfor %}
 			</div>
+    {% else %}
+      <div class="container text-center" id="messages-container">
+        {#render empty container to be able to put messages with htmx partials#}
+      </div>
 		{% endif %}
 
 
