@@ -219,14 +219,10 @@ class AddQuestionListView(LoginRequiredMixin, TemplateView):
 
 @login_required
 @require_POST
-def update_chat_question(request, chat_uuid, question_id=None):
+def create_chat_question(request, chat_uuid):
     chat = get_object_or_404(SmartChat, id=chat_uuid, owner=request.user)
-    if question_id:
-        question = get_object_or_404(ChatText, chat=chat, pk=question_id)
-        initial_len = len(question.question) + len(question.answer)
-    else:
-        question = ChatText(chat=chat)
-        initial_len = 0
+    question = ChatText(chat=chat)
+    initial_len = 0
     form = forms.ChatAddQuestionForm(request.POST, instance=question)
     if form.is_valid():
         cl = form.cleaned_data
@@ -234,22 +230,62 @@ def update_chat_question(request, chat_uuid, question_id=None):
         chat.character_length += (len(cl.get('question')) + len(cl.get('answer'))
                                   - initial_len)
         chat.save()
-        return redirect(reverse('chats:add_questions', args=[chat_uuid]))
+        create_form = forms.ChatAddQuestionForm()
+        return render(
+            request, 'chats/general/partials/create_question.html',
+            {'form': form, 'create_form': create_form,
+             'chat_uuid': chat_uuid, 'smartchat_characters': question.chat.character_length}
+        )
     else:
         messages.error(request, "Что-то пошло не так")
-        return redirect(reverse('chats:add_questions', args=[chat_uuid]))
+        return render(
+            request, 'chats/general/partials/create_question.html',
+            {'chat_uuid': chat_uuid, 'smartchat_characters': question.chat.character_length}
+        )
+
+
+@login_required
+@require_POST
+def update_chat_question(request, chat_uuid, question_id):
+    if question_id:
+        question = get_object_or_404(
+            ChatText.objects.select_related('chat'),
+            chat__id=chat_uuid,
+            chat__owner=request.user,
+            pk=question_id
+        )
+    form = forms.ChatAddQuestionForm(request.POST, instance=question)
+    initial_len = len(question.question) + len(question.answer)
+    if form.is_valid():
+        cl = form.cleaned_data
+        question.chat.character_length += len(cl.get('question')) + len(cl.get('answer')) - initial_len
+        form.save()
+        question.chat.save()
+    else:
+        messages.error(request, 'Что-то пошло не так')
+    return render(
+        request, 'chats/general/partials/update_question.html',
+        {'form': form, 'chat_uuid': chat_uuid, 'smartchat_characters': question.chat.character_length}
+    )
 
 
 @login_required
 @require_POST
 def chat_question_delete(request, chat_uuid, question_id):
-    chat = get_object_or_404(SmartChat, id=chat_uuid, owner=request.user)
-    question = get_object_or_404(ChatText, chat=chat, pk=question_id)
+    question = get_object_or_404(
+        ChatText.objects.select_related('chat'),
+        chat__id=chat_uuid,
+        chat__owner=request.user,
+        pk=question_id
+    )
     question_len = len(question.question) + len(question.answer)
-    chat.character_length -= question_len
+    question.chat.character_length -= question_len
     question.delete()
-    chat.save()
-    return redirect(reverse('chats:add_questions', kwargs={'chat_uuid': chat_uuid}))
+    question.chat.save()
+    return render(
+        request, 'chats/general/partials/delete_question.html',
+        {'smartchat_characters': question.chat.character_length}
+    )
 
 
 class ChatAddURL(LoginRequiredMixin, FormView):
