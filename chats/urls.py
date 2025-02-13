@@ -19,7 +19,7 @@ urlpatterns = [
 
     path('<uuid:chat_uuid>/add-questions/', views.AddQuestionListView.as_view(),
          name='add_questions'),
-    path('<uuid:chat_uuid>/create-question/', views.update_chat_question,
+    path('<uuid:chat_uuid>/create-question/', views.create_chat_question,
          name='create_question'),
     path('<uuid:chat_uuid>/update-question/<int:question_id>/',
          views.update_chat_question, name='update_question'),
