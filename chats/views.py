@@ -12,6 +12,9 @@ from django.contrib import messages
 from django.http import HttpResponse, FileResponse
 
 
+ALLOWED_EXTENSIONS = ['txt', 'doc', 'docx', 'pdf', 'html']
+
+
 class ListChats(LoginRequiredMixin, ListView):
     template_name = 'chats/general/chats_list.html'
     context_object_name = 'chats_list'
@@ -68,14 +71,13 @@ class AddFilesListView(LoginRequiredMixin, ListView):
         context['smartchat_characters'] = self.smartchat.character_length
         context['chat_uuid'] = self.smartchat.id
         context['chat_character_limit'] = (
-            self.smartchat.owner.chatbot_character_limit
+            self.request.user.chatbot_character_limit
         )
         context['smartchat_active'] = self.smartchat.active
         return context
 
 
 class FilesSubmitView(LoginRequiredMixin, View):
-    ALLOWED_EXTENSIONS = ['txt', 'doc', 'docx', 'pdf', 'html']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -88,13 +90,14 @@ class FilesSubmitView(LoginRequiredMixin, View):
         chat_uuid = self.kwargs.get('chat_uuid')
         self.chat = get_object_or_404(SmartChat, id=chat_uuid,
                                       owner=self.request.user)
-        self.chat_character_limit = self.chat.owner.chatbot_character_limit
+        self.chat_character_limit = self.request.user.chatbot_character_limit
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, chat_uuid):
+        saved_files = []
         for submitted_file in request.FILES.getlist('file'):
             file_length_in_bytes = 0
-            if submitted_file.name.split('.')[-1].lower() not in self.ALLOWED_EXTENSIONS:
+            if submitted_file.name.split('.')[-1].lower() not in ALLOWED_EXTENSIONS:
                 messages.error(
                     request,
                     f"Расширение файла {submitted_file.name} не поддерживается"
@@ -102,32 +105,44 @@ class FilesSubmitView(LoginRequiredMixin, View):
                 continue
             for chunk in submitted_file.chunks():
                 file_length_in_bytes += len(chunk)
+            character_approximation = file_length_in_bytes // 2
             chat_file = ChatFile(file=submitted_file, chat=self.chat,
-                                 character_length=file_length_in_bytes)
-            self.chat.character_length += file_length_in_bytes
+                                 character_length=character_approximation)
+            self.chat.character_length += character_approximation
             if (self.chat.character_length
                     <= self.chat_character_limit):
                 chat_file.save()
+                saved_files.append(chat_file)
             else:
                 self.chat.character_length -= file_length_in_bytes
                 messages.error(
                     request,
                     f"Размер файла {submitted_file.name} "
-                    f"{file_length_in_bytes} символов превышает допустимый лимит"
+                    f"{file_length_in_bytes} символов превысил допустимый лимит для чатбота"
                 )
         self.chat.save()
-        return redirect(reverse('chats:add_files', kwargs={'chat_uuid': chat_uuid}))
+        return render(
+            request, 'chats/general/partials/submit_files.html',
+            {'saved_files': saved_files, 'smartchat_characters': self.chat.character_length, 'chat_uuid': chat_uuid}
+        )
 
 
 @login_required
 @require_POST
 def chat_file_delete(request, chat_uuid, file_id):
-    chat = get_object_or_404(SmartChat, id=chat_uuid, owner=request.user)
-    file = get_object_or_404(ChatFile, chat=chat, pk=file_id)
-    chat.character_length -= file.character_length
+    file = get_object_or_404(
+        ChatFile.objects.select_related('chat'),
+        chat__id=chat_uuid,
+        chat__owner=request.user,
+        pk=file_id
+    )
+    file.chat.character_length -= file.character_length
     file.delete()
-    chat.save()
-    return redirect(reverse('chats:add_files', kwargs={'chat_uuid': chat_uuid}))
+    file.chat.save()
+    return render(
+        request, 'chats/general/partials/delete_file.html',
+        {'smartchat_characters': file.chat.character_length}
+    )
 
 
 class AddTextView(LoginRequiredMixin, FormView):
