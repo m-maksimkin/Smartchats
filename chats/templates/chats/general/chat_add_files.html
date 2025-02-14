@@ -25,104 +25,100 @@
 						<path d="M8.5 6.5a.5.5 0 0 0-1 0v3.793L6.354 9.146a.5.5 0 1 0-.708.708l2 2a.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0-.708-.708L8.5 10.293V6.5z"></path>
 						<path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"></path>
 					</svg>
-					<form enctype="multipart/form-data" id="file-send-form" method="post" action="{% url 'chats:submit_files' chat_uuid %}">
+					<form enctype="multipart/form-data" id="file-send-form" method="post" action="{% url 'chats:submit_files' chat_uuid %}"
+                hx-post="{% url 'chats:submit_files' chat_uuid %}"
+                hx-target="#file-list-container"
+                hx-swap="afterbegin">
 						{% csrf_token %}
 						<input type="file" id="file-input" name="file" style="display: none;" multiple>
 					</form>
 				</div>
-				{% if chat_files %}
 					<div class="d-flex align-items-center my-4 mb-2">
 						<hr class="w-100 my-4">
 						<span class="px-2 text-nowrap">Прикрепленные файлы</span>
 						<hr class="w-100 my-4">
 					</div>
-					{% for chat_file in chat_files %}
-						<div class="d-flex align-items-center justify-content-between">
-							<div class="py-2">
-								<span class="fw-bold">{{ chat_file.file_name }}</span>
-								<span class="text-muted">({{ chat_file.character_length }} символов)</span>
-							</div>
-							<div id="delete-box-{{ forloop.counter }}" style="color: indianred; cursor: pointer;" data-form-id="delete-form-{{ forloop.counter }}">
-								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3" viewBox="0 0 16 16">
-									<path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11Zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5h9.916Zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"></path>
-								</svg>
-							</div>
-						<form id="delete-form-{{ forloop.counter }}" method="post" action="{% url 'chats:delete-file' chat_uuid chat_file.id%}" style="display: none">
-							{% csrf_token %}
-						</form>
-						</div>
-					{% endfor %}
-				{% endif %}
+          <div id="file-list-container">
+            {% for chat_file in chat_files %}
+              <div class="d-flex align-items-center justify-content-between" id="file-container-{{ chat_file.id }}">
+                <div class="py-2">
+                  <span class="fw-bold">{{ chat_file.file_name }}</span>
+                  <span class="text-muted">({{ chat_file.character_length }} символов)</span>
+                </div>
+                <div id="delete-box-{{ chat_file.id }}" style="color: indianred; cursor: pointer;" data-form-id="delete-form-{{ chat_file.id }}"
+                     hx-post="{% url 'chats:delete-file' chat_uuid chat_file.id%}"
+                     hx-target="#file-container-{{ chat_file.id }}"
+                     hx-swap="outerHTML"
+                     hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3" viewBox="0 0 16 16">
+                    <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11Zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5h9.916Zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"></path>
+                  </svg>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
 			</div>
 
 			<div class="col-md-3">
-				<div class=" border p-4">
-					<div class="text-center fw-bold mb-2">Источники</div>
-						<div class="mb-4"></div>
-								<span class="">Всего обнаружено символов </span>
-								<span class="d-flex justify-content-center">
-									<span class="fw-bold">{{ smartchat_characters }}</span>
-									<span class="text-muted"> / {{ chat_character_limit|intcomma }}</span>
-								</span>
-							<button class="btn btn-dark w-100 mt-4" type="submit" data-form-id="create-chat-form">
-                                <form id="create-chat-form" method="post" action="{% url 'chats:create_chatbot' chat_uuid %}">
-                                    {% csrf_token %}
-                                </form>
-                                {% if smartchat_active %}Retrain Chatbot{% else %}Create Chatbot{% endif %}
-                            </button>
+				<div class="text-center border p-4">
+          <div class="fw-bold mb-2">Источники</div>
+          <div class="mb-4"></div>
+          <span class="">Всего обнаружено символов</span>
+          <span class="d-flex justify-content-center">
+            <span class="fw-bold" id="smartchat-char-count">{{ smartchat_characters }}</span>
+            <span class="text-muted"> / {{ chat_character_limit|intcomma }}</span>
+          </span>
+          <form method="post" action="{% url 'chats:create_chatbot' chat_uuid %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-dark w-100 mt-4">
+              {% if smartchat_active %}Retrain Chatbot{% else %}Create Chatbot{% endif %}
+            </button>
+          </form>
 				</div>
 			</div>
-
 		</div>
 	</div>
 {% endblock %}
 
 {% block domready %}
 <script>
-   document.addEventListener('DOMContentLoaded', (event) => {
-   // DOM loaded
-	const fileDropArea = document.getElementById('file-drop-area');
-	const fileInput = document.getElementById('file-input');
-	const fileForm = document.getElementById('file-send-form');
+  document.addEventListener('DOMContentLoaded', (event) => {
+    const fileDropArea = document.getElementById('file-drop-area');
+    const fileInput = document.getElementById('file-input');
+    const fileForm = document.getElementById('file-send-form');
 
-	fileDropArea.addEventListener('click', () => {
-		fileInput.click();
-	});
+    const submitFileForm = () => {
+      console.log('Submitting file form with files:', fileInput.files);
+      fileForm.requestSubmit();
+    };
 
-	fileDropArea.addEventListener('dragover', (e) => {
-		e.preventDefault();
-{#		fileDropArea.classList.add('dragover');#}
-	});
+    fileDropArea.addEventListener('click', () => {
+      fileInput.click();
+    });
 
-	fileDropArea.addEventListener('dragleave', () => {
-{#		fileDropArea.classList.remove('dragover');#}
-	});
+    fileDropArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+  {#		fileDropArea.classList.add('dragover');#}
+    });
 
-	fileDropArea.addEventListener('drop', (e) => {
-		e.preventDefault();
-		const files = e.dataTransfer.files;
-		if (files.length > 0 && files.length < 11) {
-			fileInput.files = files;
-			console.log(fileInput.files)
-			fileForm.submit()
-		}
-	});
-	fileInput.addEventListener('change', () => {
-		console.log(fileInput.files);
-		fileForm.submit()
-	});
+    fileDropArea.addEventListener('dragleave', () => {
+  {#		fileDropArea.classList.remove('dragover');#}
+    });
 
-	const deleteIcons = document.querySelectorAll("[data-form-id]");
+    fileDropArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const files = e.dataTransfer.files;
+      if (files.length > 0 && files.length <= 20 ) {
+        fileInput.files = files;
+        submitFileForm()
+      } else {
+          alert("За один раз можно загрузить не более 10 файлов.")
+      }
+    });
 
-	deleteIcons.forEach(function (deleteIcon) {
-		deleteIcon.addEventListener("click", function () {
-			const formId = this.getAttribute("data-form-id");
-			const deleteForm = document.getElementById(formId);
-			if (deleteForm) {
-				deleteForm.submit();
-			}
-		});
-	});
+    fileInput.addEventListener('change', () => {
+      submitFileForm()
+    });
   })
 </script>
 {% endblock %}
