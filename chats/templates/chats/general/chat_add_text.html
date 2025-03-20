@@ -33,20 +33,20 @@
 			</div>
 
 			<div class="col-md-3">
-				<div class=" border p-4">
-					<div class="text-center fw-bold mb-2">Источники</div>
-						<div class="mb-4"></div>
-								<span class="">Всего обнаружено символов </span>
-								<span class="d-flex justify-content-center">
-									<span class="fw-bold">{{ smartchat_characters }}</span>
-									<span class="text-muted"> / {{ chat_character_limit|intcomma }}</span>
-								</span>
-                            <button class="btn btn-dark w-100 mt-4" type="submit" data-form-id="create-chat-form">
-                                <form id="create-chat-form" method="post" action="{% url 'chats:create_chatbot' chat_uuid %}">
-                                    {% csrf_token %}
-                                </form>
-                                {% if smartchat_active %}Retrain Chatbot{% else %}Create Chatbot{% endif %}
-                            </button>
+				<div class="text-center border p-4">
+          <div class="fw-bold mb-2">Источники</div>
+          <div class="mb-4"></div>
+          <span class="">Всего обнаружено символов </span>
+          <span class="d-flex justify-content-center">
+            <span class="fw-bold" id="smartchat-char-count">{{ smartchat_characters }}</span>
+            <span class="text-muted"> / {{ chat_character_limit|intcomma }}</span>
+          </span>
+          <form method="post" action="{% url 'chats:create_chatbot' chat_uuid %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-dark w-100 mt-4">
+              {% if smartchat_active %}Retrain Chatbot{% else %}Create Chatbot{% endif %}
+            </button>
+          </form>
 				</div>
 			</div>
 
