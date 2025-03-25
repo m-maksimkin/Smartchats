@@ -4,10 +4,11 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import SmartChat, ChatFile, ChatText, ChatURL
+from django.core.cache import cache
 from django.db import connection
 from django.db.models import Sum
 from . import forms
-from .utils import crawl_url
+from .tasks import crawl_url_task
 from django.contrib import messages
 from django.http import HttpResponse, FileResponse
 
@@ -114,7 +115,7 @@ class FilesSubmitView(LoginRequiredMixin, View):
                 chat_file.save()
                 saved_files.append(chat_file)
             else:
-                self.chat.character_length -= file_length_in_bytes
+                self.chat.character_length -= character_approximation
                 messages.error(
                     request,
                     f"Размер файла {submitted_file.name} "
@@ -140,7 +141,7 @@ def chat_file_delete(request, chat_uuid, file_id):
     file.delete()
     file.chat.save()
     return render(
-        request, 'chats/general/partials/delete_file.html',
+        request, 'chats/general/partials/delete_source.html',
         {'smartchat_characters': file.chat.character_length}
     )
 
@@ -298,14 +299,13 @@ def chat_question_delete(request, chat_uuid, question_id):
     question.delete()
     question.chat.save()
     return render(
-        request, 'chats/general/partials/delete_question.html',
+        request, 'chats/general/partials/delete_source.html',
         {'smartchat_characters': question.chat.character_length}
     )
 
 
-class ChatAddURL(LoginRequiredMixin, FormView):
+class ChatAddURL(LoginRequiredMixin, TemplateView):
     template_name = 'chats/general/chat_add_url.html'
-    form_class = forms.ChatCrawlUrlForm
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -321,6 +321,7 @@ class ChatAddURL(LoginRequiredMixin, FormView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['form'] = forms.ChatCrawlUrlForm()
         context['smartchat_characters'] = self.smartchat.character_length
         context['chat_uuid'] = self.smartchat.id
         context['chat_character_limit'] = (
@@ -328,12 +329,65 @@ class ChatAddURL(LoginRequiredMixin, FormView):
         )
         context['smartchat_active'] = self.smartchat.active
         context['chat_urls'] = self.smartchat.urls.all().order_by('created')
+        redis_key = f"crawler_task:{self.smartchat.id}"
+        context['crawling_task_active'] = bool(cache.get(redis_key))
         return context
 
-    def form_valid(self, form):
-        url = form.cleaned_data['crawl_url']
-        crawl_url(url, self.smartchat, self.request)
-        return self.render_to_response(self.get_context_data(form=form))
+
+@login_required
+@require_POST
+def start_crawler(request, chat_uuid):
+    chat = get_object_or_404(SmartChat, id=chat_uuid, owner=request.user)
+    form = forms.ChatCrawlUrlForm(request.POST)
+    hx_trigger = 'false'
+    if form.is_valid():
+        start_url = form.cleaned_data['crawl_url']
+        redis_key = f"crawler_task:{chat_uuid}"
+        if cache.get(redis_key):
+            messages.error(request, 'Дождитесь завершения запущенной обработки')
+        else:
+            task = crawl_url_task.delay(start_url, chat_uuid)
+            cache.set(redis_key, task.id, timeout=600)
+            hx_trigger = 'true'
+    else:
+        messages.error(request, 'Введите корректный url')
+    response = render(request, 'partial_messages.html')
+    response['HX-Trigger'] = hx_trigger
+    return response
+
+
+class ListChatUrls(LoginRequiredMixin, ListView):
+    model = ChatURL
+    template_name = 'chats/general/partials/list_chat_urls.html'
+    context_object_name = 'chat_urls'
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.smartchat = None
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        chat_uuid = self.kwargs.get('chat_uuid')
+        self.smartchat = get_object_or_404(SmartChat, id=chat_uuid,
+                                           owner=self.request.user)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return self.smartchat.urls.all().order_by('created')
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['smartchat_characters'] = self.smartchat.character_length
+        context['chat_uuid'] = self.smartchat.id
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        response = super().render_to_response(context, **response_kwargs)
+        redis_key = f"crawler_task:{self.smartchat.id}"
+        hx_trigger = 'false' if cache.get(redis_key) else 'true'
+        response['HX-Trigger'] = hx_trigger
+        return response
 
 
 @login_required
@@ -342,32 +396,41 @@ def chat_url_delete(request, chat_uuid, url_id=None):
     chat = get_object_or_404(SmartChat, id=chat_uuid, owner=request.user)
     if url_id is None:
         all_urls = chat.urls.all()
-        total_length = all_urls.aggregate(total_length=Sum('character_length'))['total_length']
-        chat.character_length -= total_length
-        all_urls.delete()
-        chat.save()
+        if all_urls:
+            total_length = all_urls.aggregate(total_length=Sum('character_length'))['total_length']
+            chat.character_length -= total_length
+            all_urls.delete()
+            chat.save()
         return redirect(reverse('chats:add_url', kwargs={'chat_uuid': chat_uuid}))
     chat_url = get_object_or_404(ChatURL, chat=chat, pk=url_id)
     chat.character_length -= chat_url.character_length
     chat_url.delete()
     chat.save()
-    return redirect(reverse('chats:add_url', kwargs={'chat_uuid': chat_uuid}))
+    return render(
+        request, 'chats/general/partials/delete_source.html',
+        {'smartchat_characters': chat.character_length}
+    )
 
 
 @login_required
 @require_POST
 def initiate_chat_creation(request, chat_uuid):
     chat = get_object_or_404(SmartChat.objects.select_related('owner'), id=chat_uuid, owner=request.user)
-    chars = chat.owner.chatbot_character_limit - chat.character_length
-    if chars >= 0:
-        chat.active = True
-        chat.save()
-        messages.warning(request, 'Обучение чатбота запущено')
-        # clear index in cache
-        return redirect('chats:chat_playground', chat_uuid)
-    messages.error(request, 'Превышен лимит доступных символов для чатбота')
     referer_url = request.META.get('HTTP_REFERER', reverse('chats:add_files', kwargs={'chat_uuid': chat_uuid}))
-    return redirect(referer_url)
+    if cache.get(f"crawler_task:{chat_uuid}"):
+        messages.error(request, 'Дождитесь завершения сбора данных по url')
+        return redirect(referer_url)
+
+    remaining_chars = chat.owner.chatbot_character_limit - chat.character_length
+    if remaining_chars < 0:
+        messages.error(request, 'Превышен лимит доступных символов для чатбота')
+        return redirect(referer_url)
+
+    chat.active = True
+    chat.save()
+    messages.warning(request, 'Обучение чатбота запущено')
+    # clear index in cache
+    return redirect('chats:chat_playground', chat_uuid)
 
 
 class ChatPlayground(LoginRequiredMixin, TemplateView):
