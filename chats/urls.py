@@ -28,6 +28,10 @@ urlpatterns = [
 
     path('<uuid:chat_uuid>/add-url/', views.ChatAddURL.as_view(),
          name='add_url'),
+    path('<uuid:chat_uuid>/start-crawler/', views.start_crawler,
+         name='start_crawler'),
+    path('<uuid:chat_uuid>/list-chat-urls/', views.ListChatUrls.as_view(),
+         name='list_chat_urls'),
     path('<uuid:chat_uuid>/delete-url/<int:url_id>/', views.chat_url_delete,
          name='delete_url'),
     path('<uuid:chat_uuid>/delete-all-urls/', views.chat_url_delete,
