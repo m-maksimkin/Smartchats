@@ -1,5 +1,5 @@
 """
-ASGI config for Smartchats project.
+ASGI config for smartchats project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -15,7 +15,7 @@ from channels.auth import AuthMiddlewareStack
 import chats.routing
 
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Smartchats.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'smartchats.settings')
 
 django_asgi_app = get_asgi_application()
 
