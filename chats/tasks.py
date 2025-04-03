@@ -1,15 +1,16 @@
-from celery import shared_task
-from django.core.cache import cache
-import requests
-from urllib.parse import urlparse, urljoin, urldefrag, quote
-from hashlib import md5
-from bs4 import BeautifulSoup
-from collections import deque
-from .models import ChatURL, SmartChat
-from django.core.files.base import ContentFile
-from django.contrib import messages
 import logging
+from collections import deque
+from hashlib import md5
+from urllib.parse import quote, urldefrag, urljoin, urlparse
 
+import requests
+from bs4 import BeautifulSoup
+from celery import shared_task
+from django.contrib import messages
+from django.core.cache import cache
+from django.core.files.base import ContentFile
+
+from .models import ChatURL, SmartChat
 
 logger = logging.getLogger(__name__)
 

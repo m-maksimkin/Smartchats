@@ -1,10 +1,10 @@
 import os
 
-from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
-import chats.routing
+from channels.routing import ProtocolTypeRouter, URLRouter
+from django.core.asgi import get_asgi_application
 
+import chats.routing
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'smartchats.settings')
 

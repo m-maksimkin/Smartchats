@@ -1,19 +1,18 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth.views import LoginView
-from . import forms
-from django.http import HttpResponse
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from .tokens import EmailConfirmTokenGenerator
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.encoding import force_bytes
-from django.urls import reverse
-from .tasks import email_verify_task, password_reset_task
-from django.shortcuts import get_object_or_404
-from django.contrib.auth import get_user_model, logout
 from django.contrib import messages
-from django.views.decorators.http import require_POST
+from django.contrib.auth import get_user_model, logout
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.contrib.auth.views import LoginView
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
 
+from . import forms
+from .tasks import email_verify_task, password_reset_task
+from .tokens import EmailConfirmTokenGenerator
 
 UserModel = get_user_model()
 

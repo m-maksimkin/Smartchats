@@ -1,4 +1,4 @@
-from llama_index.core.callbacks import LlamaDebugHandler, CBEventType
+from llama_index.core.callbacks import CBEventType, LlamaDebugHandler
 
 
 class CustomLlamaInfoHandler(LlamaDebugHandler):

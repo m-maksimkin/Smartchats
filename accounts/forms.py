@@ -1,10 +1,9 @@
-from django.contrib.auth.forms import AuthenticationForm
 from django import forms
-from django.utils.translation import gettext as _
 from django.contrib.auth import get_user_model
-from django.core.validators import EmailValidator
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.password_validation import validate_password
-
+from django.core.validators import EmailValidator
+from django.utils.translation import gettext as _
 
 User = get_user_model()
 

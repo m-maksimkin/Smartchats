@@ -1,6 +1,7 @@
-from django.urls import path, include
 from allauth.urls import urlpatterns as allauth_urlpatterns
-from .views import signup_redirect_view, account_inactive_view
+from django.urls import include, path
+
+from .views import account_inactive_view, signup_redirect_view
 
 urlpatterns = [
     path('social/signup/', signup_redirect_view, name='signup_redirect'),

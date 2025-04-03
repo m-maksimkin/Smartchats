@@ -1,17 +1,17 @@
-from django.shortcuts import render, redirect, get_object_or_404, reverse
-from django.views.generic import View, ListView, TemplateView, FormView
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import SmartChat, ChatFile, ChatText, ChatURL
 from django.core.cache import cache
 from django.db import connection
 from django.db.models import Sum
-from . import forms
-from .tasks import crawl_url_task
-from django.contrib import messages
-from django.http import HttpResponse, FileResponse
+from django.http import FileResponse, HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render, reverse
+from django.views.decorators.http import require_POST
+from django.views.generic import FormView, ListView, TemplateView, View
 
+from . import forms
+from .models import ChatFile, ChatText, ChatURL, SmartChat
+from .tasks import crawl_url_task
 
 ALLOWED_EXTENSIONS = ['txt', 'doc', 'docx', 'pdf', 'html']
 

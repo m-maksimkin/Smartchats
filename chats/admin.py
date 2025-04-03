@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import SmartChat, ChatFile, ChatText, ChatURL, ChatIndex
+
+from .models import ChatFile, ChatIndex, ChatText, ChatURL, SmartChat
 
 
 class SmartChatAdmin(admin.ModelAdmin):

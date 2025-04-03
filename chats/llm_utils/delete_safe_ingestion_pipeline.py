@@ -1,12 +1,8 @@
-from llama_index.core.ingestion import IngestionPipeline, DocstoreStrategy
-from llama_index.core.schema import (
-    BaseNode,
-    Document,
-    MetadataMode,
-    TransformComponent,
-)
-
 from typing import Any, Generator, List, Optional, Sequence, Union
+
+from llama_index.core.ingestion import DocstoreStrategy, IngestionPipeline
+from llama_index.core.schema import (BaseNode, Document, MetadataMode,
+                                     TransformComponent)
 
 
 class DeleteSafeIngestionPipeline(IngestionPipeline):

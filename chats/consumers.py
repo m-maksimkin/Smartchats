@@ -1,8 +1,8 @@
 import json
 
 from asgiref.sync import sync_to_async
-from django.core.cache import cache
 from channels.generic.websocket import AsyncWebsocketConsumer
+from django.core.cache import cache
 
 from .llm_utils.chat_context import IndexManager, get_chat_prompt_templates
 
