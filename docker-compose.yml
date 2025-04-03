@@ -1,0 +1,111 @@
+services:
+  db:
+    image: postgres:17.4-alpine
+    container_name: smartchats_db
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+#    ports:
+#      - "5432:5432"
+    networks:
+      - smartchats_network
+
+  redis:
+    image: redis:7.4.2-alpine
+    container_name: smartchats_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+#    ports:
+#      - "6379:6379"
+    networks:
+      - smartchats_network
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartchats_web
+    restart: unless-stopped
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+      - hf_cache_volume:${HF_HOME}
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+#     environment:
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    entrypoint: /app/docker/web/entrypoint.sh
+    networks:
+      - smartchats_network
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartchats_celery_worker
+    restart: unless-stopped
+    command: >
+      watchfiles
+      --filter python
+      "celery -A smartchats worker --loglevel=${DJANGO_LOG_LEVEL}"
+    volumes:
+      - .:/app
+#      - static_volume:/app/static
+      - media_volume:/app/media
+      - hf_cache_volume:${HF_HOME}
+    env_file:
+      - .env
+#    environment:
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+    entrypoint: /app/docker/celery/entrypoint.sh
+    networks:
+      - smartchats_network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  static_volume:
+    driver: local
+  media_volume:
+    driver: local
+  hf_cache_volume:
+    driver: local
+
+networks:
+  smartchats_network:
+    driver: bridge

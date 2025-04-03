@@ -12,24 +12,27 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 import os
 from pathlib import Path
-from dotenv import load_dotenv
-
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-load_dotenv(os.path.join(BASE_DIR, '.env'))
+env = environ.Env(
+    DEBUG=(bool, False)
+)
+env.read_env(os.path.join(BASE_DIR, '.env'))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = str(os.getenv('SECRET_KEY'))
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
+BASE_URL = env('BASE_URL')
 
 
 # Application definition
@@ -93,17 +96,28 @@ ASGI_APPLICATION = 'smartchats.asgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
     }
 }
 
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/0",
+        "LOCATION": f"redis://:{env('REDIS_PASSWORD')}@{env('REDIS_HOST')}:{env('REDIS_PORT')}/0",
 
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
@@ -144,7 +158,7 @@ AUTHENTICATION_BACKENDS = [
 
 # LANGUAGE_CODE = 'ru'
 
-TIME_ZONE = 'Europe/Moscow'
+TIME_ZONE = env('TIME_ZONE')
 
 USE_I18N = True
 
@@ -175,7 +189,7 @@ LOGGING = {
             'maxBytes': 1024*1024*5,
             'formatter': 'verbose',
             'encoding': 'utf-8',
-            # 'backupCount': 3,  # windows filesystem causes file rotation to fail
+            'backupCount': 3,
         },
         'console': {
             'level': 'DEBUG',
@@ -185,12 +199,12 @@ LOGGING = {
     },
     "root": {
         "handlers": ['file', 'console'],
-        "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
+        "level": env("DJANGO_LOG_LEVEL", default="INFO"),
     },
     'loggers': {
         'django': {
             'handlers': ['file', 'console'],
-            'level': os.getenv("DJANGO_LOG_LEVEL", "INFO"),
+            'level': env("DJANGO_LOG_LEVEL", default="INFO"),
             'propagate': False,
         },
     },
@@ -199,9 +213,9 @@ LOGGING = {
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-MEDIA_URL = 'media/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -216,35 +230,31 @@ LOGOUT_REDIRECT_URL = 'accounts:account_index'
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_USE_TLS = True
-EMAIL_PORT = 587
-EMAIL_HOST_USER = str(os.getenv('EMAIL_HOST_USER'))
-DEFAULT_FROM_EMAIL = str(os.getenv('EMAIL_HOST_USER'))
-EMAIL_HOST_PASSWORD = str(os.getenv('EMAIL_HOST_PASSWORD'))
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = env("EMAIL_HOST")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
+EMAIL_PORT = env.int("EMAIL_PORT")
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER)
 
 
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/1'
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/2'
-CELERY_RESULT_EXPIRES = 3600
+CELERY_BROKER_URL = f'redis://:{env('REDIS_PASSWORD')}@{env('REDIS_HOST')}:{env('REDIS_PORT')}/1'
+CELERY_RESULT_BACKEND = f'redis://:{env('REDIS_PASSWORD')}@{env('REDIS_HOST')}:{env('REDIS_PORT')}/2'
+CELERY_RESULT_EXPIRES = env.int("CELERY_RESULT_EXPIRES", default=3600)
 
-SITE_ID = 1
-SOCIALACCOUNT_LOGIN_ON_GET = True
+SITE_ID = env.int("SITE_ID", default=1)
+SOCIALACCOUNT_LOGIN_ON_GET = env.bool("SOCIALACCOUNT_LOGIN_ON_GET", default=True)
+ACCOUNT_AUTHENTICATION_METHOD = env("ACCOUNT_AUTHENTICATION_METHOD", default="email")
+ACCOUNT_EMAIL_REQUIRED = env.bool("ACCOUNT_EMAIL_REQUIRED", default=True)
+ACCOUNT_UNIQUE_EMAIL = env.bool("ACCOUNT_UNIQUE_EMAIL", default=True)
+SOCIALACCOUNT_AUTO_SIGNUP = env.bool("SOCIALACCOUNT_AUTO_SIGNUP", default=True)
+
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_UNIQUE_EMAIL = True
-SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'SCOPE': [
-            'profile',
-            'email',
-        ],
-        'AUTH_PARAMS': {
-            'access_type': 'online',
-        }
+    "google": {
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
     }
 }

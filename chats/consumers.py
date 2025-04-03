@@ -22,7 +22,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         chat_prompt_templates = get_chat_prompt_templates(self.scope['url_route']['kwargs']['chat_uuid'])
         self.chat_engine = index.as_chat_engine(
             similarity_top_k=2, similarity_threshold=0.1,
-            verbose=True, chat_mode='openai', **chat_prompt_templates
+            verbose=False, chat_mode='openai', **chat_prompt_templates
         )
 
     async def disconnect(self, close_code):
