@@ -1,99 +1,80 @@
 import asyncio
 import logging
+import shutil
+from pathlib import Path
 
-from asgiref.sync import sync_to_async
 from django.conf import settings
-from llama_index.core import (Settings, StorageContext, VectorStoreIndex,
-                              load_index_from_storage)
-from llama_index.core.ingestion import DocstoreStrategy
-from llama_index.core.storage.docstore import SimpleDocumentStore
-from llama_index.core.vector_stores.simple import SimpleVectorStore
+from llama_index.core import VectorStoreIndex
+from llama_index.core.chat_engine import CondensePlusContextChatEngine
+from llama_index.core.ingestion import DocstoreStrategy, IngestionPipeline
+from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.postprocessor import SimilarityPostprocessor
+from llama_index.core.vector_stores import MetadataFilter, MetadataFilters
 
 from ..models import ChatIndex
-from .delete_safe_ingestion_pipeline import DeleteSafeIngestionPipeline
-from .documents import index_directory, load_documents_for_chat
-from .llm_factory import configure_llama_settings, get_embed_model
+from .documents import load_documents_for_chat
+from .llm_factory import configure_llama_settings, get_embed_model, get_llm
+from .prompts import get_chat_prompt_templates
+from .vector_store import chat_docstore, get_vector_store
 
 logger = logging.getLogger(__name__)
 
+_ingest_locks: dict[str, asyncio.Lock] = {}
 
-class IndexManager:
-    _indexes: dict[str, VectorStoreIndex] = {}
-    _lock = asyncio.Lock()
 
-    @classmethod
-    async def get_load_or_create_index(cls, chat_uuid):
-        configure_llama_settings()
-        async with cls._lock:
-            try:
-                chat_index = await sync_to_async(ChatIndex.objects.get)(chat_id=chat_uuid)
-            except ChatIndex.DoesNotExist:
-                chat_index = None
-            if chat_index:
-                return await cls._load_or_update_index(chat_uuid, chat_index)
+def _remove_legacy_index_files(chat_uuid):
+    index_dir = Path(settings.MEDIA_ROOT) / str(chat_uuid) / 'index'
+    if index_dir.exists():
+        shutil.rmtree(index_dir)
 
-            return await cls._create_index(chat_uuid)
 
-    @classmethod
-    async def _load_or_update_index(cls, chat_uuid, chat_index):
-        index = cls._indexes.get(chat_uuid)
-        if index is not None and not chat_index.need_update:
-            logger.info(f'Retrieved index from IndexManager for chat {chat_uuid}')
-            return index
-        if index is not None:
-            del cls._indexes[chat_uuid]
-            logger.info(f'Deleted outdated index from IndexManager for chat {chat_uuid}')
+async def ensure_chat_index(chat_uuid):
+    configure_llama_settings()
+    lock = _ingest_locks.setdefault(str(chat_uuid), asyncio.Lock())
+    async with lock:
+        try:
+            chat_index = await ChatIndex.objects.aget(chat_id=chat_uuid)
+        except ChatIndex.DoesNotExist:
+            chat_index = None
+        if chat_index is not None and not chat_index.need_update:
+            return
 
-        path_to_index = index_directory(settings.MEDIA_ROOT, chat_uuid)
-        storage_context = await sync_to_async(
-            StorageContext.from_defaults, thread_sensitive=False,
-        )(persist_dir=path_to_index)
-        embed_model = get_embed_model()
-        index = await sync_to_async(load_index_from_storage, thread_sensitive=False)(
-            storage_context=storage_context,
-            embed_model=embed_model,
-        )
-        logger.info(f'Loaded index from disk for chat {chat_uuid}')
-        if not chat_index.need_update:
-            cls._indexes[chat_uuid] = index
-            return index
-
-        logger.info(f'Updating index for chat {chat_uuid}')
         documents = await load_documents_for_chat(chat_uuid)
-        nodes = await cls._run_pipeline(index.docstore, index.vector_store, documents, embed_model)
-        index.insert_nodes(nodes)
-        chat_index.need_update = False
-        await sync_to_async(chat_index.save)()
-        await sync_to_async(storage_context.persist, thread_sensitive=False)(path_to_index)
-        cls._indexes[chat_uuid] = index
-        return index
-
-    @classmethod
-    async def _create_index(cls, chat_uuid):
-        documents = await load_documents_for_chat(chat_uuid)
-        docstore = SimpleDocumentStore()
-        vector_store = SimpleVectorStore()
-        storage_context = StorageContext.from_defaults(docstore=docstore, vector_store=vector_store)
-        embed_model = get_embed_model()
-        nodes = await cls._run_pipeline(docstore, vector_store, documents, embed_model)
-        index = await sync_to_async(VectorStoreIndex, thread_sensitive=True)(
-            nodes,
-            storage_context=storage_context,
-            embed_model=embed_model,
-        )
-        path_to_store_index = index_directory(settings.MEDIA_ROOT, chat_uuid)
-        await sync_to_async(storage_context.persist, thread_sensitive=False)(path_to_store_index)
-        await sync_to_async(ChatIndex.objects.get_or_create)(chat_id=chat_uuid)
-        cls._indexes[chat_uuid] = index
-        logger.info(f'Created index for chat {chat_uuid}')
-        return index
-
-    @staticmethod
-    async def _run_pipeline(docstore, vector_store, documents, embed_model):
-        pipeline = DeleteSafeIngestionPipeline(
-            docstore=docstore,
-            vector_store=vector_store,
+        _remove_legacy_index_files(chat_uuid)
+        pipeline = IngestionPipeline(
+            transformations=[SentenceSplitter(), get_embed_model()],
+            vector_store=get_vector_store(),
+            docstore=chat_docstore(chat_uuid),
             docstore_strategy=DocstoreStrategy.UPSERTS_AND_DELETE,
-            transformations=[*Settings.transformations, embed_model],
         )
-        return await pipeline.arun(documents=documents)
+        await pipeline.arun(documents=documents)
+        if chat_index is None:
+            await ChatIndex.objects.acreate(chat_id=chat_uuid, need_update=False)
+        else:
+            chat_index.need_update = False
+            await chat_index.asave(update_fields=['need_update', 'updated'])
+        logger.info('Stored embeddings for chat %s', chat_uuid)
+
+
+def build_chat_engine(chat_uuid):
+    configure_llama_settings()
+    index = VectorStoreIndex.from_vector_store(
+        get_vector_store(),
+        embed_model=get_embed_model(),
+    )
+    retriever = index.as_retriever(
+        similarity_top_k=settings.RAG_SIMILARITY_TOP_K,
+        filters=MetadataFilters(filters=[
+            MetadataFilter(key='chat_id', value=str(chat_uuid)),
+        ]),
+    )
+    prompts = get_chat_prompt_templates(chat_uuid)
+    return CondensePlusContextChatEngine.from_defaults(
+        retriever=retriever,
+        llm=get_llm(),
+        system_prompt=prompts['system_prompt'],
+        context_prompt=prompts['context_prompt'],
+        node_postprocessors=[
+            SimilarityPostprocessor(similarity_cutoff=settings.RAG_SIMILARITY_THRESHOLD),
+        ],
+    )

@@ -37,6 +37,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -154,6 +155,14 @@ LOGGING = {
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+    },
+}
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -173,6 +182,17 @@ CELERY_BROKER_URL = f"redis://:{env('REDIS_PASSWORD')}@{env('REDIS_HOST')}:{env(
 CELERY_RESULT_BACKEND = f"redis://:{env('REDIS_PASSWORD')}@{env('REDIS_HOST')}:{env('REDIS_PORT')}/2"
 CELERY_RESULT_EXPIRES = env.int("CELERY_RESULT_EXPIRES", default=3600)
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [
+                f"redis://:{env('REDIS_PASSWORD')}@{env('REDIS_HOST')}:{env('REDIS_PORT')}/3",
+            ],
+        },
+    },
+}
+
 SITE_ID = env.int("SITE_ID", default=1)
 SOCIALACCOUNT_LOGIN_ON_GET = env.bool("SOCIALACCOUNT_LOGIN_ON_GET", default=True)
 ACCOUNT_AUTHENTICATION_METHOD = env("ACCOUNT_AUTHENTICATION_METHOD", default="email")
@@ -191,8 +211,9 @@ SOCIALACCOUNT_PROVIDERS = {
 
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
-OPENAI_MODEL = env('OPENAI_MODEL', default='gpt-4o-mini')
-OPENAI_EMBED_MODEL = env('OPENAI_EMBED_MODEL', default='text-embedding-3-small')
+OPENAI_MODEL = env('OPENAI_MODEL', default='gpt-6-luna')
+OPENAI_EMBED_MODEL = env('OPENAI_EMBED_MODEL', default='text-embedding-3-large')
+OPENAI_EMBED_DIM = env.int('OPENAI_EMBED_DIM', default=3072)
 RAG_SIMILARITY_TOP_K = env.int('RAG_SIMILARITY_TOP_K', default=2)
 RAG_SIMILARITY_THRESHOLD = env.float('RAG_SIMILARITY_THRESHOLD', default=0.1)
 CRAWLER_CACHE_TIMEOUT = env.int('CRAWLER_CACHE_TIMEOUT', default=600)

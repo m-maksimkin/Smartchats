@@ -1,8 +1,10 @@
 services:
   db:
-    image: postgres:17.4-alpine
+    image: pgvector/pgvector:pg17
     container_name: smartchats_db
     restart: unless-stopped
+    shm_size: ${POSTGRES_SHARED_BUFFERS:-1gb}
+    command: postgres -c shared_buffers=${POSTGRES_SHARED_BUFFERS:-1gb}
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
@@ -27,7 +29,7 @@ services:
     restart: unless-stopped
     volumes:
       - redis_data:/data
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD} --maxmemory ${REDIS_MAXMEMORY:-256mb} --maxmemory-policy volatile-lru
 
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]

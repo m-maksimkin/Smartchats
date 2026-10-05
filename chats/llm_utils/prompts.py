@@ -22,5 +22,5 @@ def get_chat_prompt_templates(chat_uuid):
     # load chat specific system prompt
     return {
         'system_prompt': SYSTEM_PROMPT,
-        'context_template': CONTEXT_TEMPLATE,
+        'context_prompt': CONTEXT_TEMPLATE,
     }

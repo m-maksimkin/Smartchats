@@ -35,6 +35,9 @@
 
      chatSocket.onmessage = function(event) {
        const data = JSON.parse(event.data);
+       if (!data.message) {
+         return;
+       }
        const chat = document.getElementById('chat-list');
        const messageHTML = `
          <li class="in">
