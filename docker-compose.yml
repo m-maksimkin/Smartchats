@@ -56,13 +56,30 @@ services:
       - "8000:8000"
     env_file:
       - .env
-#     environment:
+    environment:
+      - DJANGO_VITE_DEV_MODE=${DJANGO_VITE_DEV_MODE:-True}
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     entrypoint: /app/docker/web/entrypoint.sh
+    networks:
+      - smartchats_network
+
+  frontend:
+    image: node:22-alpine
+    container_name: smartchats_frontend
+    restart: unless-stopped
+    working_dir: /app/frontend
+    command: sh -c "npm ci && npm run dev"
+    volumes:
+      - ./frontend:/app/frontend
+      - frontend_node_modules:/app/frontend/node_modules
+    environment:
+      - VITE_USE_POLLING=${VITE_USE_POLLING:-true}
+    ports:
+      - "5173:5173"
     networks:
       - smartchats_network
 
@@ -102,6 +119,8 @@ volumes:
   static_volume:
     driver: local
   media_volume:
+    driver: local
+  frontend_node_modules:
     driver: local
 
 networks:

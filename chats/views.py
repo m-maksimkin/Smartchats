@@ -5,12 +5,14 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.cache import cache
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render, reverse
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 from django.views.generic import FormView, ListView, TemplateView, View
 
 from . import forms
 from .mixins import SmartChatOwnerMixin
-from .models import ChatFile, ChatText, ChatURL, SmartChat
+from .models import ChatFile, ChatSettings, ChatText, ChatURL, SmartChat
 from .services.quotas import chatbots_remaining, within_character_limit
 from .tasks import crawl_url_task
 
@@ -35,6 +37,7 @@ def initiate_chatbot_creation(request):
         return redirect('chats:list_chats')
     new_chat = SmartChat(owner=request.user)
     new_chat.save()
+    ChatSettings.objects.create(chat=new_chat)
     return redirect('chats:add_files', chat_uuid=new_chat.pk)
 
 
@@ -352,10 +355,29 @@ def initiate_chat_creation(request, chat_uuid):
     return redirect('chats:chat_playground', chat_uuid)
 
 
-class ChatPlayground(SmartChatOwnerMixin, TemplateView):
-    template_name = 'chats/created_chats/playground.html'
+class ReactIslandView(SmartChatOwnerMixin, TemplateView):
+
+    @method_decorator(ensure_csrf_cookie)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['chat_uuid'] = self.smartchat.id
+        chat_uuid = self.smartchat.id
+        context['chat_uuid'] = chat_uuid
+        context['smartchat'] = self.smartchat
+        context['island_config'] = {
+            'chatUuid': str(chat_uuid),
+            'sourcesUrl': reverse('chats:add_files', kwargs={'chat_uuid': chat_uuid}),
+            'playgroundUrl': reverse('chats:chat_playground', kwargs={'chat_uuid': chat_uuid}),
+            'settingsUrl': reverse('chats:chat_settings', kwargs={'chat_uuid': chat_uuid}),
+        }
         return context
+
+
+class ChatPlayground(ReactIslandView):
+    template_name = 'chats/created_chats/playground.html'
+
+
+class ChatSettingsPage(ReactIslandView):
+    template_name = 'chats/created_chats/settings.html'

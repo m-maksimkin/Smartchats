@@ -1,0 +1,109 @@
+.sc-chat {
+  --sc-accent: #17202b;
+  display: flex;
+  flex-direction: column;
+  height: 70vh;
+  min-height: 420px;
+  overflow: hidden;
+}
+
+.sc-chat-header {
+  background: var(--sc-accent);
+  color: #fff;
+  padding: 0.75rem 1rem;
+}
+
+.sc-chat-header-button {
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.sc-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.sc-message {
+  max-width: 85%;
+  padding: 0.6rem 0.9rem;
+  border-radius: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.sc-message p:last-child {
+  margin-bottom: 0;
+}
+
+.sc-message-assistant {
+  align-self: flex-start;
+  background: #f1f3f5;
+  border-bottom-left-radius: 0.25rem;
+}
+
+.sc-message-user {
+  align-self: flex-end;
+  background: var(--sc-accent);
+  color: #fff;
+  border-bottom-right-radius: 0.25rem;
+  white-space: pre-wrap;
+}
+
+.sc-message-failed {
+  background: #f8d7da;
+  color: #842029;
+}
+
+.sc-sources {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+.sc-typing {
+  color: #6c757d;
+  letter-spacing: 0.15rem;
+}
+
+.sc-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0 1rem 0.5rem;
+}
+
+.sc-chat-input {
+  border-top: 1px solid #dee2e6;
+  padding: 0.75rem;
+}
+
+.sc-send-button {
+  background: var(--sc-accent);
+  color: #fff;
+}
+
+.sc-send-button:hover,
+.sc-send-button:disabled {
+  background: var(--sc-accent);
+  color: #fff;
+}
+
+.sc-playground-chat {
+  width: 100%;
+  max-width: 560px;
+}
+
+.sc-preset-select {
+  width: auto;
+  max-width: 100%;
+}
+
+.sc-sticky {
+  position: sticky;
+  top: 1rem;
+}

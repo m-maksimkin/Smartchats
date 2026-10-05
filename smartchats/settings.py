@@ -31,6 +31,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'channels',
+    'django_vite',
+    'ninja',
     'accounts.apps.AccountsConfig',
     'chats.apps.ChatsConfig',
 ]
@@ -155,6 +157,16 @@ LOGGING = {
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+FRONTEND_DIST = BASE_DIR / 'frontend' / 'dist'
+STATICFILES_DIRS = [FRONTEND_DIST] if FRONTEND_DIST.exists() else []
+DJANGO_VITE = {
+    'default': {
+        'dev_mode': env.bool('DJANGO_VITE_DEV_MODE', default=False),
+        'dev_server_host': env('DJANGO_VITE_DEV_SERVER_HOST', default='localhost'),
+        'dev_server_port': env.int('DJANGO_VITE_DEV_SERVER_PORT', default=5173),
+        'manifest_path': FRONTEND_DIST / '.vite' / 'manifest.json',
+    },
+}
 STORAGES = {
     'default': {
         'BACKEND': 'django.core.files.storage.FileSystemStorage',
@@ -214,6 +226,14 @@ CRISPY_TEMPLATE_PACK = 'bootstrap5'
 OPENAI_MODEL = env('OPENAI_MODEL', default='gpt-6-luna')
 OPENAI_EMBED_MODEL = env('OPENAI_EMBED_MODEL', default='text-embedding-3-large')
 OPENAI_EMBED_DIM = env.int('OPENAI_EMBED_DIM', default=3072)
+CHAT_MODEL_CHOICES = [
+    ('gpt-6-luna', 'GPT-6 Luna — быстрая и недорогая'),
+    ('gpt-6-sol', 'GPT-6 Sol — сбалансированная'),
+    ('gpt-6-astra', 'GPT-6 Astra — максимальное качество'),
+    ('gpt-4.1-mini', 'GPT-4.1 mini — с настройкой температуры'),
+    ('gpt-4.1', 'GPT-4.1 — с настройкой температуры'),
+]
+CHAT_MEMORY_TOKEN_LIMIT = env.int('CHAT_MEMORY_TOKEN_LIMIT', default=8000)
 RAG_SIMILARITY_TOP_K = env.int('RAG_SIMILARITY_TOP_K', default=2)
 RAG_SIMILARITY_THRESHOLD = env.float('RAG_SIMILARITY_THRESHOLD', default=0.1)
 CRAWLER_CACHE_TIMEOUT = env.int('CRAWLER_CACHE_TIMEOUT', default=600)

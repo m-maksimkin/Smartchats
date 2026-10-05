@@ -1,3 +1,12 @@
+FROM node:22-alpine AS frontend
+
+WORKDIR /frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -18,6 +27,7 @@ RUN pip install --upgrade pip
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
+COPY --from=frontend /frontend/dist /app/frontend/dist
 
 RUN mkdir -p /app/media && chmod -R +w /app/media
 RUN chmod +x /app/docker/web/entrypoint.sh

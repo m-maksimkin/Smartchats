@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load django_vite %}
+
+{% block title %}Настройки · {{ smartchat.name }}{% endblock %}
+
+{% block content %}
+  {{ island_config|json_script:"sc-config" }}
+  <div class="container-xxl pt-5">
+    <div class="container pb-4 pt-3">
+      <h1 class="text-center">Настройки чат-бота</h1>
+      <p class="text-muted text-center">Инструкции, модель и внешний вид окна чата.</p>
+    </div>
+    <div class="row">
+      <div class="col-md-2 pe-4">
+        {% include 'chats/add_sources_navbar.html' %}
+      </div>
+      <div class="col-md-10">
+        <div id="settings-root"></div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block domready %}
+  {% vite_react_refresh %}
+  {% vite_hmr_client %}
+  {% vite_asset 'src/entries/settings.tsx' %}
+{% endblock %}

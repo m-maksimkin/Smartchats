@@ -40,4 +40,5 @@ urlpatterns = [
 
     path('<uuid:chat_uuid>/create-chatbot/', views.initiate_chat_creation, name='create_chatbot'),
     path('<uuid:chat_uuid>/playground/', views.ChatPlayground.as_view(), name='chat_playground'),
+    path('<uuid:chat_uuid>/settings/', views.ChatSettingsPage.as_view(), name='chat_settings'),
 ]
