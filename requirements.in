@@ -1,0 +1,22 @@
+Django>=4.2.3,<5
+# 0.63 requires AccountMiddleware; later releases rename the auth settings.
+django-allauth==0.54.0
+django-crispy-forms>=2,<3
+crispy-bootstrap5>=0.7,<1
+django-environ>=0.12,<1
+django-redis>=5.4,<6
+channels>=4.2,<5
+daphne>=4.1,<5
+celery>=5.5,<6
+redis>=5.2,<6
+psycopg2>=2.9,<3
+requests>=2.31,<3
+beautifulsoup4>=4.12,<5
+lxml>=4.9,<6
+watchfiles>=1,<2
+pypdf>=5,<6
+docx2txt>=0.8,<1
+llama-index-core>=0.14.25,<0.15
+llama-index-llms-openai>=0.7,<0.8
+llama-index-embeddings-openai>=0.6,<0.7
+llama-index-readers-file>=0.4,<0.6

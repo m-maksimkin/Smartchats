@@ -50,7 +50,6 @@ services:
       - .:/app
       - static_volume:/app/static
       - media_volume:/app/media
-      - hf_cache_volume:${HF_HOME}
     ports:
       - "8000:8000"
     env_file:
@@ -79,7 +78,6 @@ services:
       - .:/app
 #      - static_volume:/app/static
       - media_volume:/app/media
-      - hf_cache_volume:${HF_HOME}
     env_file:
       - .env
 #    environment:
@@ -102,8 +100,6 @@ volumes:
   static_volume:
     driver: local
   media_volume:
-    driver: local
-  hf_cache_volume:
     driver: local
 
 networks:

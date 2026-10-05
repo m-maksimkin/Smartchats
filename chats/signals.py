@@ -18,9 +18,9 @@ def index_need_update_on_datasource_save(sender, instance, created, **kwargs):
             pass
 
 
-@receiver(post_save, sender=ChatText)
-@receiver(post_save, sender=ChatFile)
-@receiver(post_save, sender=ChatURL)
+@receiver(post_delete, sender=ChatText)
+@receiver(post_delete, sender=ChatFile)
+@receiver(post_delete, sender=ChatURL)
 def index_need_update_on_datasource_delete(sender, instance, **kwargs):
     smartchat = instance.chat
     if smartchat:

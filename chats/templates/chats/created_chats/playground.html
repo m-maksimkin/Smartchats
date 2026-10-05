@@ -29,7 +29,8 @@
   <script>
     document.addEventListener('DOMContentLoaded', (event) => {
      const chatUuid = JSON.parse(document.getElementById('chat-uuid').textContent);
-     const url = 'ws://' + window.location.host + '/ws/chats/' + chatUuid + '/';
+     const scheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+     const url = scheme + window.location.host + '/ws/chats/' + chatUuid + '/';
      const chatSocket = new WebSocket(url);
 
      chatSocket.onmessage = function(event) {

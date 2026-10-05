@@ -19,7 +19,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
-RUN chmod +w /app/cache/huggingface
 RUN mkdir -p /app/media && chmod -R +w /app/media
 RUN chmod +x /app/docker/web/entrypoint.sh
 RUN chmod +x /app/docker/celery/entrypoint.sh

@@ -28,7 +28,7 @@ def get_upload_path(instance, filename):
 class ChatFile(models.Model):
     file = models.FileField(
         upload_to=get_upload_path,
-        validators=[FileExtensionValidator(['txt', 'docx', 'pdf', 'html'])]
+        validators=[FileExtensionValidator(settings.ALLOWED_UPLOAD_EXTENSIONS)]
     )
     file_name = models.CharField(max_length=256, blank=True)
     chat = models.ForeignKey(SmartChat, on_delete=models.CASCADE, related_name="files")
@@ -38,7 +38,7 @@ class ChatFile(models.Model):
     def save(self, *args, **kwargs):
         if not self.file_name:
             self.file_name = os.path.basename(self.file.name)
-            super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class ChatText(models.Model):

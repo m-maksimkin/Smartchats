@@ -190,3 +190,13 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
+
+OPENAI_MODEL = env('OPENAI_MODEL', default='gpt-4o-mini')
+OPENAI_EMBED_MODEL = env('OPENAI_EMBED_MODEL', default='text-embedding-3-small')
+RAG_SIMILARITY_TOP_K = env.int('RAG_SIMILARITY_TOP_K', default=2)
+RAG_SIMILARITY_THRESHOLD = env.float('RAG_SIMILARITY_THRESHOLD', default=0.1)
+CRAWLER_CACHE_TIMEOUT = env.int('CRAWLER_CACHE_TIMEOUT', default=600)
+ALLOWED_UPLOAD_EXTENSIONS = env.list(
+    'ALLOWED_UPLOAD_EXTENSIONS',
+    default=['txt', 'docx', 'pdf', 'html'],
+)

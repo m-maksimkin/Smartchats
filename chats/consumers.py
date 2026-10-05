@@ -1,10 +1,13 @@
 import json
 
-from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
-from django.core.cache import cache
+from django.conf import settings
+from llama_index.core.chat_engine import ContextChatEngine
+from llama_index.core.postprocessor import SimilarityPostprocessor
 
-from .llm_utils.chat_context import IndexManager, get_chat_prompt_templates
+from .llm_utils.chat_context import IndexManager
+from .llm_utils.llm_factory import get_llm
+from .llm_utils.prompts import get_chat_prompt_templates
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -15,14 +18,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         await self.accept()
-        index = await IndexManager.get_load_or_create_index(
-            self.scope['url_route']['kwargs']['chat_uuid'],
-            self.scope["session"].session_key
-        )
-        chat_prompt_templates = get_chat_prompt_templates(self.scope['url_route']['kwargs']['chat_uuid'])
-        self.chat_engine = index.as_chat_engine(
-            similarity_top_k=2, similarity_threshold=0.1,
-            verbose=False, chat_mode='openai', **chat_prompt_templates
+        chat_uuid = self.scope['url_route']['kwargs']['chat_uuid']
+        index = await IndexManager.get_load_or_create_index(chat_uuid)
+        prompts = get_chat_prompt_templates(chat_uuid)
+        retriever = index.as_retriever(similarity_top_k=settings.RAG_SIMILARITY_TOP_K)
+        self.chat_engine = ContextChatEngine.from_defaults(
+            retriever=retriever,
+            llm=get_llm(),
+            system_prompt=prompts['system_prompt'],
+            context_template=prompts['context_template'],
+            node_postprocessors=[
+                SimilarityPostprocessor(similarity_cutoff=settings.RAG_SIMILARITY_THRESHOLD),
+            ],
         )
 
     async def disconnect(self, close_code):
